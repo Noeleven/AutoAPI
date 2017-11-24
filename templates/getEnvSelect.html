@@ -1,0 +1,5 @@
+<select class="form-control" name="choiceEnv">
+    {% for x in envs %}
+    <option value="{{x.id}}">{{x.envName}}</option>
+    {% endfor %}
+</select>

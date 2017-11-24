@@ -1,0 +1,23 @@
+{% extends "apiIndex.html" %}
+{% block content %}
+
+    <div class="box box-danger">
+        <div class="box-header with-border">
+          <h3 class='box-title'><i class='fa fa-bullhorn'></i> Hi, 起个名字吧</h3>
+        </div>
+        <form class="form" action="/autoAPI/caseAdd" method="post">
+            {% csrf_token %}
+          <div class="box-body" style='padding-right:50%'>
+              {{ form.casename }}
+            <p class='danger'>{{ error }}</p>
+          </div>
+
+          <div class="box-footer">
+            <button type="submit" class="btn btn-info"><i class='fa fa-space-shuttle'></i> Go</button>
+          </div>
+        </form>
+      </div>
+
+
+
+{% endblock %}

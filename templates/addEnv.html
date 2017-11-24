@@ -1,0 +1,89 @@
+
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <h4 class="modal-title" id="myModalLabel">{% if envs %}环境编辑{% else %}新增环境{% endif %}</h4>
+    </div>
+
+    <div class="modal-body" id='modal-body'>
+      <div class="form-group">
+          <input type="text" class='form-control' id="envName" value="{% if envs %}{{envs.envName}}{% endif %}" placeholder="环境名称"  required>
+      </div>
+      <div class="form-group">
+          <textarea type="text"  class='form-control' id="des" value="" placeholder="描述" required>{% if envs %}{{envs.des}}{% endif %}</textarea>
+      </div>
+      <div class="form-group">
+          <textarea type="text" id='envContent' class='form-control' name="content" rows=10 required>{% if envs %}{{envs.content}}{% else %}{{content}}{% endif %}</textarea>
+      </div>
+
+      <div id='messFather' class="alert alert-danger alert-dismissible" style='display:none'>
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+          <p id='message'><i class="icon fa fa-warning"></i> </p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      {% if envs %}{%else%}<button id='saveEnv' type="submit" class="btn btn-primary">保存</button>{%endif%}
+    </div>
+
+
+<script>
+    // 校验json
+    function isJSON_test(str) {
+        if (typeof str == 'string') {
+            try {
+                var obj=JSON.parse(str);
+                // console.log('转换成功：'+obj);
+                return true;
+            } catch(e) {
+                // console.log('error：'+str+'!!!'+e);
+                return false;
+            }
+        }
+        console.log('It is not a string!')
+    }
+
+    // 监听校验content内容
+    $('#envContent').bind('input propertychange', function() {
+        var s = $('#envContent').val()
+        if(isJSON_test(s)){
+            $('#messFather').css({'display':'none'})
+            $('#saveEnv').attr("disabled",false);
+        }else{
+            $('#message').html('Json格式错误，请检查')
+            $('#messFather').css({'display':''})
+            $('#saveEnv').attr("disabled",true);
+        }
+    });
+
+    $.ajaxSetup({
+        data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
+    });
+
+    // Ajax提交表单
+    $('#saveEnv').click(function(){
+        var envName = $('#envName').val()
+            des = $('#des').val()
+            envContent = $('#envContent').val()
+
+        if(envName.length==0){
+            $('#message').html('名称不能为空')
+            $('#messFather').css({'display':''})
+        }else if(des.length==0){
+            $('#message').html('des不能为空')
+            $('#messFather').css({'display':''})
+        }else{
+            $.post('/autoAPI/addEnv',{'envName':envName,'des':des,'content':envContent}, function(ret){
+                var mess = ret[0]
+                console.log(mess.indexOf('环境'))
+                if(mess.indexOf('环境')>= 0){
+                    $('#message').html('该名称已经存在')
+                    $('#messFather').css({'display':''})
+                }else{
+                    $('#modal-body').html(mess)
+                    $('#saveEnv').css({'display':'none'})
+                }
+            })
+        }
+    })
+
+</script>

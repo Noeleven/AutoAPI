@@ -1,0 +1,80 @@
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'dist/css/jsonFormat.css'%}">
+
+{% for x in target.entries %}
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title row">
+        <div class='col-sm-1'>
+            <span class="glyphicon glyphicon-{% if x.status == 'success' %}remove text-danger{%else%}check text-success{%endif%}" aria-hidden="true"></div>
+        <div class='col-sm-1'>耗时 {{x.costTime}} ms</div>
+        <div class='col-sm-1'>Step {{x.index}}</div>
+        <div class='col-sm-9'>{{x.des}}</div>
+    </h3>
+  </div>
+  <div class="panel-body" style='word-break:break-all'>
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#check{{x.index}}" aria-controls="check{{x.index}}" role="tab" data-toggle="tab">校验</a></li>
+        <li role="presentation"><a href="#response{{x.index}}" aria-controls="response{{x.index}}" role="tab" data-toggle="tab">响应</a></li>
+        <li role="presentation"><a href="#request{{x.index}}" aria-controls="request{{x.index}}" role="tab" data-toggle="tab">请求</a></li>
+      </ul>
+
+        <div class="tab-content">
+          <div role="tabpanel" class="tab-pane fade in active" id="check{{x.index}}">
+              <br>
+              <ul>
+                  {% for y in x.request.check_str_list %}
+                  <li>
+                    <span class="glyphicon glyphicon-{% if y.check == 'success' %}remove text-danger{% else%}check text-success {%endif%}" aria-hidden="true"></span>
+                    {{y.checkKey}}
+                        {% if y.checkType == 'contains' %} 包含
+                        {% elif y.checkType == 'noContains '%} 不包含
+                        {%else%} 等于{% endif %}
+                    {{y.checkValue}}</li>
+                  {% endfor %}
+              </ul>
+          </div>
+          <div role="tabpanel" class="tab-pane fade" id="response{{x.index}}">
+              <br>
+            <dl class="dl-horizontal">
+              <dt>响应码</dt>
+              <dd>{{ x.response.code }}</dd>
+              <dt>响应头</dt>
+              <dd>{{ x.response.header }}</dd>
+              <dt>响应体</dt>
+              <dd id='jsonResponse{{x.index}}'><p id='error{{x.index}}'></p></dd>
+            </dl>
+          </div>
+          <div role="tabpanel" class="tab-pane fade" id="request{{x.index}}">
+              <br>
+              <dl class="dl-horizontal">
+                <dt>描述</dt>
+                <dd>{{ x.request.api_name }}</dd>
+                <dt>请求方法</dt>
+                <dd>{{ x.request.request_method }}</dd>
+                <dt>URL</dt>
+                <dd>{{ x.request.api_url }}</dd>
+                <dt>Body</dt>
+                <dd>{{ x.request.params }}</dd>
+              </dl>
+          </div>
+        </div>
+  </div>
+</div>
+{% endfor %}
+<script src="{% static 'dist/js/jsonFormat.js'%}"></script>
+
+<script>
+    var types = {{ tt |safe }}     //json
+        res = {{ res |safe }}
+
+    for(i in types){
+        var m = + i + 1
+        if(types[i]=='json'){
+            console.log('ok')
+            format(res[i], '#jsonResponse'+m, '#error'+m)
+            setTimeout(format(res[i], '#jsonResponse'+m, '#error'+m), 1000);    // 关键少了会导致
+        }
+    }
+
+</script>

@@ -16,6 +16,7 @@
 
       <div class="navbar-custom-menu">
         <ul class="nav navbar-nav">
+            <!--
           <li class="dropdown messages-menu">
             <a href="#" class="dropdown-toggle" data-toggle="dropdown">
               <i class="fa fa-envelope-o"></i>
@@ -24,9 +25,8 @@
             <ul class="dropdown-menu">
               <li class="header">You have 4 messages</li>
               <li>
-                <!-- inner menu: contains the actual data -->
                 <ul class="menu">
-                  <li><!-- start message -->
+                  <li>
                     <a href="#">
                       <div class="pull-left">
                         <img src="" class="img-circle" alt="User Image">
@@ -38,7 +38,6 @@
                       <p>Why not buy a new awesome theme?</p>
                     </a>
                   </li>
-                  <!-- end message -->
                   <li>
                     <a href="#">
                       <div class="pull-left">
@@ -100,7 +99,6 @@
             <ul class="dropdown-menu">
               <li class="header">You have 10 notifications</li>
               <li>
-                <!-- inner menu: contains the actual data -->
                 <ul class="menu">
                   <li>
                     <a href="#">
@@ -141,9 +139,8 @@
             <ul class="dropdown-menu">
               <li class="header">You have 9 tasks</li>
               <li>
-                <!-- inner menu: contains the actual data -->
                 <ul class="menu">
-                  <li><!-- Task item -->
+                  <li>
                     <a href="#">
                       <h3>
                         Design some buttons
@@ -156,8 +153,7 @@
                       </div>
                     </a>
                   </li>
-                  <!-- end task item -->
-                  <li><!-- Task item -->
+                  <li>
                     <a href="#">
                       <h3>
                         Create a nice theme
@@ -170,8 +166,7 @@
                       </div>
                     </a>
                   </li>
-                  <!-- end task item -->
-                  <li><!-- Task item -->
+                  <li>
                     <a href="#">
                       <h3>
                         Some task I need to do
@@ -184,8 +179,7 @@
                       </div>
                     </a>
                   </li>
-                  <!-- end task item -->
-                  <li><!-- Task item -->
+                  <li>
                     <a href="#">
                       <h3>
                         Make beautiful transitions
@@ -198,7 +192,6 @@
                       </div>
                     </a>
                   </li>
-                  <!-- end task item -->
                 </ul>
               </li>
               <li class="footer">
@@ -206,11 +199,12 @@
               </li>
             </ul>
           </li>
+           -->
           <li>
             <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i> 配置</a>
           </li>
           <li>
-            <a href="/autoAPI/logout"><i class="fa fa-sign-out"></i> 退出</a>
+            <a href="/autoAPI/logout">Hi, {{ request.META.USER }}  <i class="fa fa-sign-out"> </i> 退出</a>
           </li>
         </ul>
       </div>
@@ -223,17 +217,17 @@
       <!-- sidebar menu: : style can be found in sidebar.less -->
       <ul class="sidebar-menu">
         <li class="header">导航</li>
-        <li class="active treeview">
-          <a href="#">
+        <li class="treeview">
+          <a href="/autoAPI/caseAdd">
             <i class="fa fa-dashboard"></i> <span>新建用例</span>
           </a>
         </li>
         <li class="treeview">
-          <a href="#">
+          <a href="/autoAPI/caseSearch">
             <i class="fa fa-th"></i> <span>用例查询</span>
           </a>
         </li>
-        <li class="treeview">
+        <!-- <li class="treeview">
           <a href="#">
             <i class="fa fa-files-o"></i>
             <span>用例集</span>
@@ -251,21 +245,20 @@
             <i class="fa fa-pie-chart"></i>
             <span>小组管理</span>
           </a>
-        </li>
+        </li> -->
         <li class="treeview">
-          <a href="#">
-            <i class="fa fa-laptop"></i>
-            <span>测试结果</span>
-            <span class="pull-right-container">
+          <a href="/autoAPI/getReport" id='ceshijieguo'>
+            <i class="fa fa-laptop"></i> <span>测试结果</span>
+            <!-- <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>
-            </span>
+            </span> -->
           </a>
-          <ul class="treeview-menu">
-            <li><a href="pages/UI/general.html"><i class="fa fa-circle-o text-blue"></i> 今日记录</a></li>
-            <li><a href="pages/UI/icons.html"><i class="fa fa-circle-o text-blue"></i> 历史记录</a></li>
-          </ul>
+          <!-- <ul class="treeview-menu">
+            <li><a href="/autoAPI/getReport?type=1"><i class="fa fa-circle-o text-blue"></i> 用例</a></li>
+            <li><a href="/autoAPI/getReport?type=2"><i class="fa fa-circle-o text-blue"></i> 用例集</a></li>
+          </ul> -->
         </li>
-        <li class="treeview">
+        <!-- <li class="treeview">
           <a href="#">
             <i class="fa fa-edit"></i> <span>数据统计</span>
             <span class="pull-right-container">
@@ -275,7 +268,7 @@
           <ul class="treeview-menu">
             <li><a href="pages/forms/general.html"><i class="fa fa-circle-o text-blue"></i> 概览</a></li>
           </ul>
-        </li>
+        </li> -->
       </ul>
     </section>
     <!-- /.sidebar -->

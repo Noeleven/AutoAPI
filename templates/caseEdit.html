@@ -1,0 +1,261 @@
+{% extends "apiIndex.html" %}
+{% block content %}
+
+<form class="form" method='post' action='/autoAPI/caseEdit/{{case.id}}/'>
+    {% csrf_token %}
+
+    <!-- 名称、描述 -->
+    <div class="box box-danger">
+        <div class="box-header with-border">
+            <h3 class='box-title'><i class='fa fa-tripadvisor'></i> {{case.caseName}}</h3>
+            <button type="submit" class="btn btn-info btn-sm pull-right"><i class='fa fa-save'></i> 保存</button>
+            <!-- <button type="button" id='runTest' class="btn btn-default btn-sm"><i class='fa fa-play'></i> 测试</button> -->
+            <!-- <button type="button" id='delCase' class="btn btn-warning btn-sm"><i class='fa fa-trash-o'></i> 删除</button> -->
+        </div>
+        <div class="box-body">
+            <div class="alert alert-danger alert-dismissible" style='display:none'>
+                <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                <small id='caseMessage'></small>
+            </div>
+        </div>
+    </div>
+
+    <!-- 名称，备注，环境 -->
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="box box-default">
+                <!-- 基本配置 -->
+                <div class="box-body">
+                    <!-- 名称 描述 -->
+                    <div class="form-group">
+                        <label>用例名</label>
+                        <input type="text" class="form-control" placeholder="用例名" value='{{case.caseName}}' name='caseName'>
+                    </div>
+                    <!-- des -->
+                    <div class="form-group">
+                        <label>备注</label>
+                        <textarea class="form-control" name="caseDes" placeholder="描述">{{case.des}}</textarea>
+                    </div>
+                    <!-- envChoice -->
+                    <div class="form-group">
+                        <label>环境选择</label>
+                        <div class="input-group">
+                            <div class="input-group-btn">
+                                <button id='lookEnvBtn' type="button" class='btn btn-default btn-flat' data-toggle="modal" data-target="#addEnv"><i class='fa fa-eye'></i> </button>
+                            </div>
+                            <div id='getEnvSelect'>
+                                <select class="form-control" name="choiceEnv">
+                                    {% for x in envs %}
+                                    <option value="{{x.id}}" {% if x.id == case.enviID.id %}selected{% endif %}>{{x.envName}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="input-group-btn">
+                                <button id='addEnvBtn' type="button" class='btn btn-default btn-flat' data-toggle="modal" data-target="#addEnv"><i class='fa fa-plus'></i> </button>
+                                <button id='refreshBtn' type="button" class='btn btn-default btn-flat'><i class='fa fa-refresh'></i> </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HEADER -->
+        <div class="col-sm-6">
+            <div class="box box-default">
+                <div class="box-body">
+                    <div class="form-group">
+                        <label>Header配置</label>
+                        <table class='table table-condensed'>
+                            <thead>
+                                <tr>
+                                    <th>字段</th>
+                                    <th>值</th>
+                                    <!-- <th>描述</th> -->
+                                    <th><button type="button" class='btn btn-default btn-sm' onclick="addMod('headerMOD','headerBody', this)"><i class='fa fa-plus'></i></button></th>
+                                </tr>
+                            </thead>
+                            <tbody id='headerBody'>
+                                {% for x,y in headers.items %}
+                                <tr>
+                                    <td><input type="text" class='form-control' name="headerKey" value='{{x}}'></td>
+                                    <td><input type="text" class='form-control' name="headerValue" value='{{y}}'></td>
+                                    <!-- <td><input type="text" class='form-control' name="headerDes" value='{{x.headerDes}}'></td> -->
+                                    <td>
+                                        <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="box-header with-border">
+        <h3 class='box-title'><i class='fa fa-sort-numeric-asc'></i> 步骤 STEP</h3>
+    </div>
+    <!-- 步骤 tab -->
+    <div id='stepMaster' class="box-group">
+        {% for x in story.caseStep %}
+        <div id='{{x.index}}' class="panel box box-default">
+            <div class="box-header with-border">
+                <!-- stepTitle -->
+                <a data-toggle="collapse" data-parent="#stepMaster" href="#collapse_{{x.index}}" aria-expanded="false" class="collapsed">
+                    <div class="col-sm-8">
+                        <h4 class="box-title">{{x.index}}</h4> - {{x.des}}
+                    </div>
+                </a>
+                <!-- toolBox -->
+                <div class="col-sm-4 pull-right">
+                    <!-- 右侧按钮组 -->
+                    <div class="box-tools pull-right">
+                        <button onclick='stepCopy(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title="复制"><i class="fa fa-copy"></i> </button>
+                        <!-- <button onclick='stepInsert(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title="插入"><i class="fa fa-plus"></i> </button> -->
+                        <button onclick='stepUp(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title=""><i class="fa fa-arrow-up"></i> </button>
+                        <button onclick='stepDown(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title=""><i class="fa fa-arrow-down"></i> </button>
+                        <button onclick='stepDel(this)' type="button" class="btn btn-box-tool"><i class="fa fa-remove"></i> </button>
+                    </div>
+                </div>
+            </div>
+            <!-- 每个步骤 -->
+            <div id="collapse_{{x.index}}" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+                <div class="box-body">
+                    <div class="nav-tabs-custom">
+                        <!-- tabs -->
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a class='atab' href="#tab_{{x.index}}_0" data-toggle="tab"><i class="fa fa-send"></i> 接口配置</a></li>
+                            <li><a class='atab' href="#tab_{{x.index}}_1" data-toggle="tab"><i class="fa fa-body"></i> Body</a></li>
+                            <li><a class='atab' href="#tab_{{x.index}}_2" data-toggle="tab"><i class="fa fa-dollar"></i> 接口校验</a></li>
+                            <li><a class='atab' href="#tab_{{x.index}}_3" data-toggle="tab"><i class="fa fa-check"></i> 变量设置</a></li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <!-- 接口配置 -->
+                            <div class="tab-pane active" id="tab_{{x.index}}_0">
+                                <p class='text-primary'>URL配置</p>
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <div class="form-group">
+                                            <input type="text" name="stepDes" class='form-control' placeholder="步骤名称" value='{{x.des}}' >
+                                        </div>
+                                        <div class="form-group">
+                                            <select class="form-control input-sm" name="stepMethod">
+                                                <option value="GET" {% if x.method == 'GET' %}selected{% endif %}>GET</option>
+                                                <option value="POST" {% if x.method == 'POST' %}selected{% endif %}>POST</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <textarea type="text" class="form-control" placeholder="URL" rows=5 name='stepURL' >{{x.url}}</textarea>
+                                        </div>
+                                        <button onclick='singleTest(this)' type="button" class="btn btn-default"><i class='fa fa-play'></i> 测试</button>
+                                        <button type="button" id="toParams" class="btn btn-info" disabled>参数化</button>
+                                    </div>
+                                    <div class="col-sm-6" id='showParams'>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Body配置 -->
+                            <div class="tab-pane" id="tab_{{x.index}}_1">
+                                <p class='text-primary'>部分请求参数在body中传递</p>
+
+                                <table class='table table-condensed'>
+                                    <thead>
+                                        <tr>
+                                            <th>字段</th>
+                                            <th>值</th>
+                                            <th><button type="button" class='btn btn-default btn-sm' onclick="addMod('bodyMOD','stepBody', this)"><i class='fa fa-plus'></i></button></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id='stepBody{{x.index}}'>
+                                        {% for k,v in x.body.items %}
+                                        <tr>
+                                            <td><input type="text" class='form-control' name="bodyKey{{x.index}}" value='{{k}}'></td>
+                                            <td><input type="text" class='form-control' name="bodyValue{{x.index}}" value='{{v}}'></td>
+                                            <td>
+                                                <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- 接口校验 -->
+                            <div class="tab-pane" id="tab_{{x.index}}_2">
+                                <p class='text-primary'>默认仅校验HTTP响应码</p>
+                                <table class='table table-condensed'>
+                                    <thead>
+                                        <tr>
+                                            <th>校验项</th><th>条件</th><th></th>
+                                            <th>
+                                                <button type="button" class='btn btn-default btn-sm' onclick='addMod("checkMOD","checkBody", this)'><i class='fa fa-plus'></i></button>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id='checkBody{{x.index}}'>
+                                        {% for y in x.check %}
+                                        <tr>
+                                            <td>
+                                                <!-- <select name="checkKey{{x.index}}" class='form-control'>
+                                                    <option value="apiCode" {% if y.checkKey == 'apiCode' %}selected>接口code码</option>
+                                                    <option value="response" {% elif y.checkKey == 'response' %}selected>响应结果</option>
+                                                    <option value="" {% else %}selected{% endif %}>{{y.checkKey}}</option>
+                                                </select> -->
+                                                <input type="text" name="checkKey{{x.index}}" class='form-control' value='{{y.checkKey}}'>
+                                            </td>
+                                            <td>
+                                                <select name="checkCondition{{x.index}}" class='form-control'>
+                                                    <option value="equals" {% if y.checkType == 'equals' %}selected{% endif %}>等于</option>
+                                                    <option value="noEquals" {% if y.checkType == 'noEquals' %}selected{% endif %}>不等于</option>
+                                                    <option value="contains" {% if y.checkType == 'contains' %}selected{% endif %}>包含</option>
+                                                    <option value="noContains" {% if y.checkType == 'noContains' %}selected{% endif %}>不包含</option>
+                                                </select>
+                                            </td>
+                                            <td><input type="text" class='form-control' name="checkValue{{x.index}}" value='{{y.checkValue}}'></td>
+                                            <td>
+                                                <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <!-- 设置变量 -->
+                            <div class="tab-pane" id="tab_{{x.index}}_3">
+                                <p class='text-primary'>通过设置一个变量，赋给它请求返回json结果中任意一个字段的值</p>
+                                <table class='table table-condensed'>
+                                    <thead>
+                                        <tr>
+                                            <th>定义变量</th><th>赋值</th><th>响应结果字段值</th><th><button type="button" class='btn btn-default btn-sm' onclick="addMod('argvMOD','argvBody',this)"><i class='fa fa-plus'></i></button></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id='argvBody{{x.index}}'>
+                                        {% for y in x.argv %}
+                                        <tr>
+                                            <td><input type="text" class='form-control' name="argvKey{{x.index}}" value='{{y.argvKey}}'></td>
+                                            <td><p class='form-control'>=</p></td>
+                                            <td><input type="text" class='form-control' name="argValue{{x.index}}" value='{{y.argValue}}'></td>
+                                            <td>
+                                                <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id='showR{{x.index}}'></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</form>
+
+{% include "Model.html" %}
+{% endblock %}

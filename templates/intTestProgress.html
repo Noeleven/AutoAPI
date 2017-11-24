@@ -1,0 +1,7 @@
+{% for x in result %}
+<tr>
+    <td>{{x.des}}</td>
+    <td>{{x.costTime}}</td>
+    <td>{% if x.result == 'success'%}<span class='label bg-green'><i class='fa fa-check'></i></span>{% else %}<span class='label bg-red'><i class='fa fa-close'></i></span>{% endif %}</td>
+</tr>
+{% endfor %}

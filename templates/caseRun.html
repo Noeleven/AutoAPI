@@ -1,0 +1,36 @@
+<div class="progress progress-sm active">
+    <div class="progress-bar progress-bar-success progress-bar-striped" role="progressbar" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" style="width: 5%">
+      <span class="sr-only">5%</span>
+    </div>
+  </div>
+
+<script>
+    // 定时刷新进度
+    var ref = "";
+        tt = '{{ timeStamp|safe }}'
+        count = 0
+        steps = {{ steps|safe }}
+    console.log(steps,typeof(steps))
+    //2. 定时刷新调用的方法
+    function getProgress() {
+        $.get("/autoAPI/intTestProgress",{'rt':'2','tt':tt}, function(ret){
+            $('#results').html(ret)
+        });
+        // getNum
+        $.getJSON("/autoAPI/intTestProgress",{'rt':'1','tt':tt}, function(data){
+            $('#nowNum').text(data.num)
+            if(data.num==steps){
+                clearInterval(ref);
+            }
+        });
+    };
+    //3. 设置定时刷新
+    ref = setInterval(function(){
+        getProgress();
+        count+=1;
+        if(count==300){ // 超过20分钟的停掉吧
+            clearInterval(ref);
+        }
+    },2000);
+
+</script>

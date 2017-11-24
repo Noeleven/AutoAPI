@@ -5,14 +5,21 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   {% load staticfiles %}
   {% include "header.html" %}
+  <!-- jQuery 2.2.3 -->
+  <script src="{% static 'plugins/jQuery/jquery-2.2.3.min.js'%}"></script>
 </head>
 <body class="hold-transition skin-blue sidebar-mini">
 <div class="wrapper">
   {% include "navigation.html" %}
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
-      {% block content %}
-      {% endblock %}
+    <section class='content'>
+        {% block content %}
+        {% endblock %}
+    </section>
+    <!-- <section id='mainContent'>
+    </section> -->
+
   </div>
   <!-- /.content-wrapper -->
   {% include "footer.html" %}
@@ -22,8 +29,7 @@
 </div>
 <!-- ./wrapper -->
 
-<!-- jQuery 2.2.3 -->
-<script src="{% static 'plugins/jQuery/jquery-2.2.3.min.js'%}"></script>
+
 <!-- jQuery UI 1.11.4 -->
 <script src="{% static 'dist/js/jquery-ui.min.js' %}"></script>
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
@@ -59,5 +65,16 @@
 <!-- <script src="{% static 'dist/js/pages/dashboard.js'%}"></script> -->
 <!-- AdminLTE for demo purposes -->
 <script src="{% static 'dist/js/demo.js'%}"></script>
+<script>
+    $.ajaxSetup({
+        data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
+    });
+
+    $('.treeview').find('a').each(function () {
+        if (this.href == document.location.href || document.location.href.search(this.href) >= 0) {
+            $(this).parent().addClass('active');
+        }
+    });
+</script>
 </body>
 </html>

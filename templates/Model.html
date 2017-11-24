@@ -1,0 +1,229 @@
+<!-- 新建环境模态框 -->
+<div class="modal fade bs-example-modal-lg" id="addEnv" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div id='myModel'>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style='display:none'>
+    <!-- headerMOD -->
+    <table>
+        <tbody>
+            <tr id='headerMOD'>
+                <td><input type="text" class='form-control' name="headerKey"></td>
+                <td><input type="text" class='form-control' name="headerValue"></td>
+                <!-- <td><input type="text" class='form-control' name="headerDes"></td> -->
+                <td>
+                    <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- argvMOD -->
+    <table >
+        <tbody>
+            <tr id='argvMOD'>
+                <td><input type="text" class='form-control' name="argvKey"></td>
+                <td><p class='form-control'>=</p></td>
+                <td><input type="text" class='form-control' name="argValue"></td>
+                <td>
+                    <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- checkMOD -->
+    <table>
+        <tbody>
+            <tr id='checkMOD'>
+                <td>
+                    <input type="text" name="checkKey" class='form-control' value=''>
+                </td>
+                <td>
+                    <select name="checkCondition" class='form-control'>
+                        <option value="equals">等于</option>
+                        <option value="noEquals">不等于</option>
+                        <option value="contains">包含</option>
+                        <option value="noContains">不包含</option>
+                    </select>
+                </td>
+                <td><input type="text" class='form-control' name="checkValue"></td>
+                <td>
+                    <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <!-- bodyMOD -->
+    <table>
+        <tbody>
+            <tr id='bodyMOD'>
+                <td><input type="text" class='form-control' name="bodyKey" value=''></td>
+                <td><input type="text" class='form-control' name="bodyValue" value=''></td>
+                <td>
+                    <button type="button" class='btn btn-warning btn-sm' onclick="myDel(this)"><i class='fa fa-minus'></i></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+
+<script>
+    // 新增env
+    $('#addEnvBtn').click(function(){
+        $.get("/autoAPI/addEnv",function(ret){
+            $('#myModel').html(ret)
+        })
+    })
+    // 刷新env列表
+    $('#refreshBtn').click(function(){
+        $.get('/autoAPI/getEnvSelect',function(ret){
+            $('#getEnvSelect').html(ret)
+        })
+    })
+    // 查看env
+    $('#lookEnvBtn').click(function(){
+        var envID = $('#getEnvSelect').find("option:selected").attr('value')
+        $.get("/autoAPI/getEnvSelect",{'id':envID},function(ret){
+            $('#myModel').html(ret)
+        })
+    })
+</script>
+<script>
+    // add
+    function addMod(modID, fatherID, node){
+        var
+            mod = document.getElementById(modID).cloneNode(true)
+            targetTB = node.parentNode.parentNode.parentNode.nextElementSibling
+
+        targetTB.appendChild(mod)
+        flushID()
+    }
+
+    // 删除行
+    function myDel(node) {
+        var
+            child = node.parentNode.parentNode;
+            father = child.parentNode;
+        father.removeChild(child);
+    }
+    // 删除step
+    function stepDel(node) {
+        var
+            child = node.parentNode.parentNode.parentNode.parentNode;
+            father = child.parentNode;
+            index = $('#stepMaster').children().length
+
+        if(index=='1'){
+            $('#caseMessage').text('请至少保留一个步骤')
+            $('.alert-danger').toggle()
+        }else{
+            father.removeChild(child);
+            flushID()
+        }
+    }
+
+    function flushID() {
+        var
+            target = $('#stepMaster').children()
+            lens = target.length // 大行数量
+        // 遍历大行 方法依赖于结构
+        for (x = 0; x < lens; x++) {
+            index = x + 1
+            // 折叠页和tab标签
+            my = document.getElementById('stepMaster')
+            $('.panel')[x].id = index
+                // collapse
+            $("a[href*='collapse_']")[x].href = '#collapse_' + index
+            $('#stepMaster .box-title')[x].innerHTML = index
+            $('.panel-collapse.collapse')[x].id = 'collapse_' + index
+                // tab
+            for (y = 0;y<4 ;y++){
+                $('.collapse:eq('+ x + ') .atab')[y].href = '#tab_' + index + '_' + y
+                $('.collapse:eq('+ x + ') .tab-pane')[y].id = 'tab_' + index + '_' + y
+            }
+            // body
+            bKName = 'bodyKey' + index
+            bVName = 'bodyValue' + index
+            $(".tab-content:eq("+ x + ") [name*='bodyKey']").attr('name',bKName)
+            $(".tab-content:eq("+ x + ") [name*='bodyValue']").attr('name',bVName)
+            // check
+            cKName = 'checkKey' + index
+            cCName = 'checkCondition' + index
+            cVName = 'checkValue' + index
+            $(".tab-content:eq("+ x + ") [name*='checkKey']").attr('name',cKName)
+            $(".tab-content:eq("+ x + ") [name*='checkCondition']").attr('name',cCName)
+            $(".tab-content:eq("+ x + ") [name*='checkValue']").attr('name',cVName)
+            // argv
+            aKName = 'argvKey' + index
+            aVName = 'argValue' + index
+            $(".tab-content:eq("+ x + ") [name*='argvKey']").attr('name',aKName)
+            $(".tab-content:eq("+ x + ") [name*='argValue']").attr('name',aVName)
+        }
+    }
+
+    function stepUp(obj) {
+        var objParentTR = $(obj).parent().parent().parent().parent(); // self tr
+            prevTR = objParentTR.prev(); // 前一行tr
+        // 如果前面有
+        if (prevTR.length > 0) {
+            prevTR.insertAfter(objParentTR);
+        }
+        flushID()
+    }
+
+    function stepCopy(obj) {
+        var objParentTR = $(obj).parent().parent().parent().parent();
+
+        newObj = objParentTR.clone(true)
+        objParentTR.after(newObj)
+        flushID()
+    }
+
+    function stepDown(obj) {
+        var objParentTR = $(obj).parent().parent().parent().parent();
+            nextTR = objParentTR.next();
+        if (nextTR.length > 0) {
+            nextTR.insertBefore(objParentTR);
+        }
+        flushID()
+    }
+
+</script>
+<script>
+    function singleTest(obj){
+        var
+            params = {}
+            body = {}
+            header = {}
+            base = $(obj).parents('.box-default')[0].id
+            matherID = '#' + $(obj).parents('[id^=collapse]')[0].id
+
+        $('#showR' + base).text('')
+        envID = $(':selected')[0].value
+        // get header
+        $('#headerBody tr').each(function(){
+            header[$(this).find('[name=headerKey]').val()] = $(this).find('[name=headerValue]').val()
+        })
+        // body
+        $('#stepBody' + base + ' tr').each(function(){
+            body[$(this).find('[name^=bodyKey]').val()] = $(this).find('[name^=bodyValue]').val()
+        })
+        // other
+        $(matherID + ' [name^=step]').each(function(){
+            params[this.name] = this.value
+        })
+
+        console.log(body)
+        $.post('/autoAPI/uniTest',{'envID':envID,'header':JSON.stringify(header),'body':JSON.stringify(body), 'params':JSON.stringify(params)},function(ret){
+            $('#showR' + base).html(ret)
+        })
+    }
+
+</script>

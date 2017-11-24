@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+import json
 
 class UserForm(forms.Form):
 	username = forms.CharField(
@@ -10,6 +11,13 @@ class UserForm(forms.Form):
 		required=True,
 		min_length=6,
 		error_messages={'required': '密码不能为空.','min_length':'至少6位'})
+
+class CaseAddForm(forms.Form):
+	casename = forms.CharField(
+		widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "用例名称", "name": "casename"}),
+		max_length=50,
+		required=True,
+		error_messages={'required': '用例名不能为空.'})
 
 class ForgetForm(forms.Form):
 	email = forms.EmailField(
@@ -75,3 +83,11 @@ class RegisterForm(forms.Form):
 			raise forms.ValidationError(u'两次输入的密码不一致')
 
 		return self.cleaned_data
+
+# class addEnvForm(forms.Form):
+# 	envName = forms.CharField(label='环境名称',
+# 		widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "环境名称", "name": "envName"}), max_length=50, required=True)
+# 	des = forms.CharField(label='描述',
+# 		widget=forms.Textarea(attrs={"class": "form-control", "placeholder": "环境描述", "name": "des"}), required=True)
+# 	content = forms.CharField(label='自定义环境参数',
+# 		widget=forms.Textarea(attrs={"class": "form-control", "id": "envContent", "name": "content" }), required=True,  initial='{"firstChannel":"Android","secondChannel":"XIAOMI","globalLongitude":"121.398318","globalLatitude":"31.241757","lvsessionid":"96d84d8c-eafd-4a2b-a0ee-77532a78f044"}')
