@@ -64,7 +64,7 @@
     $('#search').click(function(){
         var daterange = $('input[name=daterange]').val()
         var reportType = $('select[name=reportType]').val()
-        $.get('/autoAPI/getReportAjax', {'daterange':daterange, 'reportType':reportType}, function(ret){
+        $.get('/autoAPI/reportSearchList', {'daterange':daterange, 'reportType':reportType}, function(ret){
             $('#myTabel').html(ret)
         })
     })

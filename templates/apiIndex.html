@@ -13,12 +13,10 @@
   {% include "navigation.html" %}
   <!-- Content Wrapper. Contains page content -->
   <div class="content-wrapper">
-    <section class='content'>
+    <section class='content' id='section-content'>
         {% block content %}
         {% endblock %}
     </section>
-    <!-- <section id='mainContent'>
-    </section> -->
 
   </div>
   <!-- /.content-wrapper -->
@@ -29,40 +27,58 @@
 </div>
 <!-- ./wrapper -->
 
+<!-- env modal -->
+<div class="modal fade bs-example-modal-lg" id="addEnv" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div id='myModel'>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- jQuery UI 1.11.4 -->
-<script src="{% static 'dist/js/jquery-ui.min.js' %}"></script>
+<!-- <script src="{% static 'dist/js/jquery-ui.min.js' %}"></script> -->
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
-<script>
+<!-- <script>
   $.widget.bridge('uibutton', $.ui.button);
-</script>
+</script> -->
+
 <!-- Bootstrap 3.3.6 -->
 <script src="{% static 'bootstrap/js/bootstrap.min.js'%}"></script>
+
 <!-- Morris.js charts -->
 <!-- <script src="{% static 'dist/js/raphael-min.js' %}"></script>
 <script src="{% static 'plugins/morris/morris.min.js'%}"></script> -->
+
 <!-- Sparkline -->
-<script src="{% static 'plugins/sparkline/jquery.sparkline.min.js'%}"></script>
-<!-- jvectormap -->
-<script src="{% static 'plugins/jvectormap/jquery-jvectormap-1.2.2.min.js'%}"></script>
-<script src="{% static 'plugins/jvectormap/jquery-jvectormap-world-mill-en.js'%}"></script>
-<!-- jQuery Knob Chart -->
-<script src="{% static 'plugins/knob/jquery.knob.js'%}"></script>
+<!-- <script src="{% static 'plugins/sparkline/jquery.sparkline.min.js'%}"></script> -->
+
+<!-- jvectormap 矢量地图-->
+<!-- <script src="{% static 'plugins/jvectormap/jquery-jvectormap-1.2.2.min.js'%}"></script>
+<script src="{% static 'plugins/jvectormap/jquery-jvectormap-world-mill-en.js'%}"></script> -->
+
+<!-- jQuery Knob Chart 旋钮图-->
+<!-- <script src="{% static 'plugins/knob/jquery.knob.js'%}"></script> -->
 <!-- daterangepicker -->
 <script src="{% static 'dist/js/moment.min.js' %}"></script>
 <script src="{% static 'plugins/daterangepicker/daterangepicker.js'%}"></script>
 <!-- datepicker -->
 <script src="{% static 'plugins/datepicker/bootstrap-datepicker.js'%}"></script>
-<!-- Bootstrap WYSIHTML5 -->
-<script src="{% static 'plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js'%}"></script>
-<!-- Slimscroll -->
-<script src="{% static 'plugins/slimScroll/jquery.slimscroll.min.js'%}"></script>
-<!-- FastClick -->
-<script src="{% static 'plugins/fastclick/fastclick.js'%}"></script>
+<!-- Bootstrap WYSIHTML5 富文本编辑器-->
+<!-- <script src="{% static 'plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.all.min.js'%}"></script> -->
+
+<!-- Slimscroll 滚动条-->
+<!-- <script src="{% static 'plugins/slimScroll/jquery.slimscroll.min.js'%}"></script> -->
+
+<!-- FastClick 移动端 是否双击 -->
+<!-- <script src="{% static 'plugins/fastclick/fastclick.js'%}"></script> -->
+
 <!-- AdminLTE App -->
 <script src="{% static 'dist/js/app.min.js'%}"></script>
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<!-- <script src="{% static 'dist/js/pages/dashboard.js'%}"></script> -->
+<script src="{% static 'plugins/iCheck/icheck.min.js' %}"></script>
+
 <!-- AdminLTE for demo purposes -->
 <script src="{% static 'dist/js/demo.js'%}"></script>
 <script>
@@ -75,6 +91,28 @@
             $(this).parent().addClass('active');
         }
     });
+
+    function checkList(){
+        var checkID = []
+        $('tr.selected').each(function(){
+            var thisID = $(this).find('td').eq(1).html()
+            checkID.push(thisID)
+        })
+        return checkID
+    }
+
+    // $('.pageJump').click(function(){
+    //     var urlmap = {
+    //             'ajax':'/autoAPI/reportSearch',
+    //             'ceshijieguo':'/autoAPI/reportSearch'
+    //     }
+    //
+    //     url = urlmap[$(this)[0].id]
+    //     console.log(url)
+    //     $.get(url, function(ret){
+    //         $('#section-content').html(ret)
+    //     })
+    // })
 </script>
 </body>
 </html>

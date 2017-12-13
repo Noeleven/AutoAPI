@@ -5,11 +5,11 @@
 <div class="panel panel-default">
   <div class="panel-heading">
     <h3 class="panel-title row">
-        <div class='col-sm-1'>
-            <span class="glyphicon glyphicon-{% if x.status == 'success' %}remove text-danger{%else%}check text-success{%endif%}" aria-hidden="true"></div>
-        <div class='col-sm-1'>耗时 {{x.costTime}} ms</div>
         <div class='col-sm-1'>Step {{x.index}}</div>
+        <div class='col-sm-1'>
+            <span class="glyphicon glyphicon-{% if x.status %}check text-success{%else%}remove text-danger{%endif%}" aria-hidden="true"></span></div>
         <div class='col-sm-9'>{{x.des}}</div>
+        <div class='col-sm-1'>耗时 {{x.costTime}} ms</div>
     </h3>
   </div>
   <div class="panel-body" style='word-break:break-all'>
@@ -23,9 +23,16 @@
           <div role="tabpanel" class="tab-pane fade in active" id="check{{x.index}}">
               <br>
               <ul>
+                  <li>{% if x.check.0 %}
+                      <span class="glyphicon glyphicon-check text-success" aria-hidden="true"></span>
+                      {% else %}
+                      <span class="glyphicon glyphicon-remove text-danger" aria-hidden="true"></span>
+                      {% endif %}
+                      响应码 = 200
+                  </li>
                   {% for y in x.request.check_str_list %}
                   <li>
-                    <span class="glyphicon glyphicon-{% if y.check == 'success' %}remove text-danger{% else%}check text-success {%endif%}" aria-hidden="true"></span>
+                    <span class="glyphicon glyphicon-{% if y.check %}check text-success{% else%}remove text-danger{%endif%}" aria-hidden="true"></span>
                     {{y.checkKey}}
                         {% if y.checkType == 'contains' %} 包含
                         {% elif y.checkType == 'noContains '%} 不包含
@@ -42,7 +49,11 @@
               <dt>响应头</dt>
               <dd>{{ x.response.header }}</dd>
               <dt>响应体</dt>
+              {% if x.myType == 'json' %}
               <dd id='jsonResponse{{x.index}}'><p id='error{{x.index}}'></p></dd>
+              {% else %}
+              <dd>{{x.response.data}}</dd>
+              {% endif %}
             </dl>
           </div>
           <div role="tabpanel" class="tab-pane fade" id="request{{x.index}}">
@@ -73,7 +84,7 @@
         if(types[i]=='json'){
             console.log('ok')
             format(res[i], '#jsonResponse'+m, '#error'+m)
-            setTimeout(format(res[i], '#jsonResponse'+m, '#error'+m), 1000);    // 关键少了会导致
+            setTimeout(format(res[i], '#jsonResponse'+m, '#error'+m), 5000);    // 关键少了会导致
         }
     }
 

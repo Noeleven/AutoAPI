@@ -1,12 +1,12 @@
 
     <div class="modal-header">
       <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-      <h4 class="modal-title" id="myModalLabel">{% if envs %}环境编辑{% else %}新增环境{% endif %}</h4>
+      <h4 class="modal-title" id="myModalLabel">{% if envs %}公共参数编辑{% else %}新增公共参数{% endif %}</h4>
     </div>
 
     <div class="modal-body" id='modal-body'>
       <div class="form-group">
-          <input type="text" class='form-control' id="envName" value="{% if envs %}{{envs.envName}}{% endif %}" placeholder="环境名称"  required>
+          <input type="text" class='form-control' id="envName" value="{% if envs %}{{envs.envName}}{% endif %}" placeholder="公共参数名称"  required>
       </div>
       <div class="form-group">
           <textarea type="text"  class='form-control' id="des" value="" placeholder="描述" required>{% if envs %}{{envs.des}}{% endif %}</textarea>
@@ -22,7 +22,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-      {% if envs %}{%else%}<button id='saveEnv' type="submit" class="btn btn-primary">保存</button>{%endif%}
+      <button id='saveEnv' type="submit" class="btn btn-primary">保存</button>
     </div>
 
 
@@ -64,6 +64,7 @@
         var envName = $('#envName').val()
             des = $('#des').val()
             envContent = $('#envContent').val()
+            envId = '{{envId|safe}}'
 
         if(envName.length==0){
             $('#message').html('名称不能为空')
@@ -72,10 +73,10 @@
             $('#message').html('des不能为空')
             $('#messFather').css({'display':''})
         }else{
-            $.post('/autoAPI/addEnv',{'envName':envName,'des':des,'content':envContent}, function(ret){
+            $.post('/autoAPI/envAdd',{'envId':envId, 'envName':envName,'des':des,'content':envContent}, function(ret){
                 var mess = ret[0]
-                console.log(mess.indexOf('环境'))
-                if(mess.indexOf('环境')>= 0){
+                console.log(mess.indexOf('公共参数'))
+                if(mess.indexOf('公共参数')>= 0){
                     $('#message').html('该名称已经存在')
                     $('#messFather').css({'display':''})
                 }else{

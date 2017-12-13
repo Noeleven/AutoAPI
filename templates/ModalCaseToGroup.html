@@ -1,0 +1,53 @@
+{% load staticfiles %}
+<link href="{% static 'vendors/jquery-editable-select.min.css' %}" rel="stylesheet">
+<script src="{% static 'vendors/jquery-editable-select.min.js' %}"></script>
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4>添加用例集</h4>
+</div>
+
+<div class="modal-body">
+    {% if justDo == '1' %}
+    <form class="form">
+        <div class="form-group">
+            <label>用例集选择</label>
+            <small class='text-primary text-help'>选择用例集 或 输入新用例集的名称创建</small>
+            <div class="input-group">
+                <select id='getGroupSelect' class="form-control">
+                    {% for x in groups %}
+                    <option value="{{x.id}}">{{x.groupName}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <h5>{{content}}</h5>
+    {% endif %}
+    <div id='content'>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+    {% if justDo == '1' %}
+    <button type="button" class="btn btn-default" id='addGroupBtn'>添加</button>
+    {% endif %}
+</div>
+
+<script>
+    $('#getGroupSelect').editableSelect({ filter: true });
+
+    $('#content').html('')
+
+    $('#addGroupBtn').click(function(){
+        var checkID = checkList()
+            groupName = $('#getGroupSelect').val()
+
+        $.post('/autoAPI/caseToGroup', {'ids':checkID, 'groupName':groupName }, function(data){
+            $('#content').html(data.content)
+            $('#Search').click()
+        })
+    })
+</script>

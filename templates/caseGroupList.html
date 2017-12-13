@@ -1,0 +1,45 @@
+{% extends "apiIndex.html" %}
+{% block content %}
+<div class="box box-danger">
+    <div class="box-header with-border">
+      <h3 class='box-title'><i class='fa fa-search' id='Search'></i> 用例集</h3>
+    </div>
+    <div class="box-body">
+        <!-- <button type="button" class="btn btn-default" id="getHistory"><i class="fa fa-history  xwcms"></i> 用例集操作历史</a> -->
+        <button type="button" id='delCases' class="btn btn-danger btn-sm" data-toggle="modal" data-target="#addEnv"><span class="fa fa-trash" aria-hidden="true"></span> 批量删除</button>
+        <div id="my_table">
+
+        </div>
+        <div id='history'>
+        </div>
+	</div>
+</div>
+
+<script>
+    // for post
+    $.ajaxSetup({
+        data: {csrfmiddlewaretoken: '{{ csrf_token }}' },
+    });
+
+    // group list search
+    $('#Search').click(function(){
+        $.post('/autoAPI/caseGroupList', function(ret){
+            $('#my_table').html(ret)
+        })
+    })
+
+    // 页面默认加载结果
+    $('#Search').click()
+
+    // del caseGroup
+    $("#delCases").click(function(){
+        var checkID = checkList()
+
+        $.get('/autoAPI/caseDel', {'ids':checkID, 'type':'group'}, function(ret){
+            $('#myModel').html(ret)
+        })
+    })
+
+</script>
+
+{% endblock content %}

@@ -1,18 +1,30 @@
 {% extends "apiIndex.html" %}
 {% block content %}
 
-<form class="form" method='post' action='/autoAPI/caseEdit/{{case.id}}/'>
-    {% csrf_token %}
+
 
     <!-- 名称、描述 -->
     <div class="box box-danger">
         <div class="box-header with-border">
-            <h3 class='box-title'><i class='fa fa-tripadvisor'></i> {{case.caseName}}</h3>
-            <button type="submit" class="btn btn-info btn-sm pull-right"><i class='fa fa-save'></i> 保存</button>
-            <!-- <button type="button" id='runTest' class="btn btn-default btn-sm"><i class='fa fa-play'></i> 测试</button> -->
-            <!-- <button type="button" id='delCase' class="btn btn-warning btn-sm"><i class='fa fa-trash-o'></i> 删除</button> -->
-        </div>
-        <div class="box-body">
+            <h3 class='box-title'>
+                {% if case.status == '1' %}
+                <i class='fa fa-circle text-green'></i>
+                {% else %}
+                <i class='fa fa-circle text-red'></i>
+                {% endif %}
+            {{case.caseName}}</h3>
+            <hr>
+            <form class="form" method="post" enctype="multipart/form-data" action='/autoAPI/upload'>
+                {% csrf_token %}
+                {{form}}
+                <input type="text" name="caseID" value="{{case.id}}" class='sr-only'><br>
+                <button type="submit" name="button" class='btn btn-default btn-sm'>upload</button>
+            </form>
+
+            <!-- <label for="exampleInputFile">从HAR导入</label>
+            <input type="file" id="exampleInputFile">
+            <button type="button" class="btn btn-default btn-sm"><i class='fa fa-import'></i> 导入</button> -->
+
             <div class="alert alert-danger alert-dismissible" style='display:none'>
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
                 <small id='caseMessage'></small>
@@ -20,7 +32,9 @@
         </div>
     </div>
 
-    <!-- 名称，备注，环境 -->
+<form class="form" method='post' action='/autoAPI/caseEdit/{{case.id}}/'>
+    {% csrf_token %}
+    <!-- 名称，备注，公共参数 -->
     <div class="row">
         <div class="col-sm-6">
             <div class="box box-default">
@@ -28,8 +42,26 @@
                 <div class="box-body">
                     <!-- 名称 描述 -->
                     <div class="form-group">
+                        <label>状态</label>
+                        {% if case.status == '1' %}
+                        <input type="radio" class="form-control" name="caseStatus" value='1' checked> 启用
+                        <input type="radio" class="form-control" name="caseStatus" value='-1'> 禁用
+                        {% else %}
+                        <input type="radio" class="form-control" name="caseStatus" value='1'> 启用
+                        <input type="radio" class="form-control" name="caseStatus" value='-1' checked> 禁用
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
                         <label>用例名</label>
                         <input type="text" class="form-control" placeholder="用例名" value='{{case.caseName}}' name='caseName'>
+                    </div>
+                    <div class="form-group">
+                        <label>品类</label>
+                        <select class="form-control" name="category">
+                            {% for x in categorys %}
+                                <option value="{{x.id}}" {% if case.ci.id == x.id %}selected{% endif %}>{{x.cname}}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <!-- des -->
                     <div class="form-group">
@@ -38,7 +70,7 @@
                     </div>
                     <!-- envChoice -->
                     <div class="form-group">
-                        <label>环境选择</label>
+                        <label>公共参数选择</label>
                         <div class="input-group">
                             <div class="input-group-btn">
                                 <button id='lookEnvBtn' type="button" class='btn btn-default btn-flat' data-toggle="modal" data-target="#addEnv"><i class='fa fa-eye'></i> </button>
@@ -55,7 +87,10 @@
                                 <button id='refreshBtn' type="button" class='btn btn-default btn-flat'><i class='fa fa-refresh'></i> </button>
                             </div>
                         </div>
+                        <p class="help-text text-danger"> 新建/编辑完公共参数, 需要点击刷新才能查看</p>
                     </div>
+
+                    <button type="submit" class="btn btn-success btn-sm"><i class='fa fa-save'></i> 保存</button>
                 </div>
             </div>
         </div>
@@ -103,7 +138,7 @@
         <div id='{{x.index}}' class="panel box box-default">
             <div class="box-header with-border">
                 <!-- stepTitle -->
-                <a data-toggle="collapse" data-parent="#stepMaster" href="#collapse_{{x.index}}" aria-expanded="false" class="collapsed">
+                <a data-toggle="collapse" data-parent="#stepMaster" href="#collapse{{x.index}}" aria-expanded="false" class="collapsed">
                     <div class="col-sm-8">
                         <h4 class="box-title">{{x.index}}</h4> - {{x.des}}
                     </div>
@@ -121,7 +156,7 @@
                 </div>
             </div>
             <!-- 每个步骤 -->
-            <div id="collapse_{{x.index}}" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+            <div id="collapse{{x.index}}" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
                 <div class="box-body">
                     <div class="nav-tabs-custom">
                         <!-- tabs -->
@@ -151,9 +186,9 @@
                                             <textarea type="text" class="form-control" placeholder="URL" rows=5 name='stepURL' >{{x.url}}</textarea>
                                         </div>
                                         <button onclick='singleTest(this)' type="button" class="btn btn-default"><i class='fa fa-play'></i> 测试</button>
-                                        <button type="button" id="toParams" class="btn btn-info" disabled>参数化</button>
+                                        <!-- <button onclick='toParams(this)' type="button" class="btn btn-info" disabled>参数化</button> -->
                                     </div>
-                                    <div class="col-sm-6" id='showParams'>
+                                    <div class="col-sm-6" id='showParams{{x.index}}'>
                                     </div>
                                 </div>
                             </div>
@@ -257,5 +292,14 @@
 
 </form>
 
+<script>
+    $(document).ready(function(){
+      $('input').iCheck({
+        checkboxClass: 'icheckbox_flat-purple',
+        radioClass: 'iradio_flat-purple',
+        increaseArea: '20%' // optional
+      });
+    });
+</script>
 {% include "Model.html" %}
 {% endblock %}

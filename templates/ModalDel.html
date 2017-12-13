@@ -1,0 +1,29 @@
+
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+    <h4>删除确认</h4>
+</div>
+
+<div class="modal-body">
+    <h5 id='content'>{{content}}</h5>
+</div>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-default btn-sm" data-dismiss="modal">Close</button>
+    {% if justDo == '1' %}<button id='justDel' type="button" class="btn btn-success btn-sm" >Just Do IT</button>{% endif %}
+</div>
+
+<script>
+    var myType = '{{myType|safe}}'
+    console.log(myType)
+
+    $("#justDel").click(function(){
+        var checkID = checkList()
+
+        $.post('/autoAPI/caseDel', {'ids':checkID, 'type':myType}, function(data){
+            console.log(data.content)
+            $('#content').html(data.content)
+            $('#Search').click()
+        })
+    })
+</script>

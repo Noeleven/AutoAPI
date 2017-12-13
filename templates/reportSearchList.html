@@ -1,0 +1,29 @@
+<table class='table table-condensed'>
+    <thead>
+        <tr><th>ID</th><th>名称</th><th>测试人</th><th>启动时间</th><th>进度</th><th>通过</th><th>耗时</th><th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if reportType == '1' %}
+            {% for x in result %}
+            <tr>
+                <td>{{x.caseID}}</td><td>{{x.name}}</td> <td>{{x.tester}}</td><td>{{x.create_time|date:"Y-m-d H:i:s"}}</td><td>{{x.progress}}%</td>
+                <td>{% if status == 'success' %}<span class='glyphicon glyphicon-check text-success'></span>
+                    {%else%}<span class='glyphicon glyphicon-remove text-danger'></span>
+                {% endif %}</td>
+                <td>{{x.costTime}}</td>
+                <td><a type="button" href="/autoAPI/reportDetail?timeStamp={{x.timeStamp}}" class='btn btn-info btn-sm' target=_blank><i class="fa fa-file"></i></a></td>
+            </tr>
+            {% endfor %}
+        {% else%}
+            {% for x in result %}
+            <tr>
+                <td>{{x.groupID}}</td><td>{{x.name}}</td> <td>{{x.tester}}</td><td>{{x.create_time|date:"Y-m-d H:i:s"}}</td><td>{{x.progress}}%</td>
+                <td>{{x.passRate}}%</td>
+                <td>{{x.costTime}}</td>
+                <td><a type="button" href="/autoAPI/reportDetail?timeStamp={{x.timeStamp}}" class='btn btn-info btn-sm' target=_blank><i class="fa fa-file"></i></a></td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>

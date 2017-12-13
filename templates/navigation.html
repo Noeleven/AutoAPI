@@ -204,7 +204,7 @@
             <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i> 配置</a>
           </li>
           <li>
-            <a href="/autoAPI/logout">Hi, {{ request.META.USER }}  <i class="fa fa-sign-out"> </i> 退出</a>
+            <a href="/autoAPI/signLogout">Hi, {{ request.META.USER }}  <i class="fa fa-sign-out"> </i> 退出</a>
           </li>
         </ul>
       </div>
@@ -227,27 +227,19 @@
             <i class="fa fa-th"></i> <span>用例查询</span>
           </a>
         </li>
-        <!-- <li class="treeview">
-          <a href="#">
-            <i class="fa fa-files-o"></i>
-            <span>用例集</span>
-            <span class="pull-right-container">
-              <i class="fa fa-angle-left pull-right"></i>
-            </span>
-          </a>
-          <ul class="treeview-menu">
-            <li><a href="pages/layout/top-nav.html"><i class="fa fa-circle-o text-blue"></i> 7105</a></li>
-            <li><a href="pages/layout/boxed.html"><i class="fa fa-circle-o text-blue"></i> 用例集管理</a></li>
-          </ul>
-        </li>
         <li class="treeview">
+          <a href="/autoAPI/caseGroupList">
+            <i class="fa fa-files-o"></i> <span>用例集管理</span>
+          </a>
+        </li>
+        <!-- <li class="treeview">
           <a href="#">
             <i class="fa fa-pie-chart"></i>
             <span>小组管理</span>
           </a>
         </li> -->
         <li class="treeview">
-          <a href="/autoAPI/getReport" id='ceshijieguo'>
+          <a href="/autoAPI/reportSearch" id='ceshijieguo'>
             <i class="fa fa-laptop"></i> <span>测试结果</span>
             <!-- <span class="pull-right-container">
               <i class="fa fa-angle-left pull-right"></i>

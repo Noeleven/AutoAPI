@@ -1,39 +1,44 @@
 {% load staticfiles %}
 <link rel="stylesheet" href="{% static 'dist/css/jsonFormat.css'%}">
-<div class="box box-solid">
-    <div class="box-body">
-      <dl class="dl-horizontal">
-          <dt>耗时</dt>
-          <dd>{{costTime}} ms</dd>
-        <dt>HTTP响应码</dt>
-        <dd>{{r.status_code}}</dd>
-        <dt>HTTP响应头</dt>
-        <dd><div id='showH{{timeStamp}}'></div></dd>
-        <dt>响应结果</dt>
-        {% if resultType == "json" %}
-        <dd><div id='showR{{timeStamp}}'></div></dd>
-        {% else %}
-        <dd><pre style='word-break:break-all;word-wrap:break-word;'>{{showR}}</pre></dd>
-        {% endif %}
-      </dl>
+    <div class="box box-solid">
+        <div class="box-body">
+          <button onclick='myDel(this)' type="button" class="btn btn-box-tool pull-right"><i class="fa fa-remove text-danger"></i> </button>
+          <dl class="dl-horizontal">
+            <dt>耗时</dt>
+            <dd>{{costTime}} ms</dd>
+            <dt>HTTP响应码</dt>
+            <dd>{{r.status_code}}</dd>
+            <dt>HTTP响应头</dt>
+            <dd><div id='showH{{timeStamp}}'></div></dd>
+            <dt>响应结果</dt>
+            {% if resultType == "json" %}
+            <dd><div id='showR{{timeStamp}}'></div></dd>
+            {% elif resultType == 'image' %}
+            <dd><img src="{{showR}}" alt="image" style='max-width:200px'></dd>
+            {% else %}
+            <dd><code class="language-html" data-lang="html">{{showRR}}</code>
+            {% endif %}
+          </dl>
+        </div>
+        <div class="col-md-12 alert alert-danger" id="error-span" style="display: none;"></div>
     </div>
-    <div class="col-md-12 alert alert-danger" id="error-span" style="display: none;"></div>
-</div>
 <script src="{% static 'dist/js/jsonFormat.js'%}"></script>
 
 <script>
     var hea = {{ showH |safe }}     //json
-        res = {{ showR |safe }}     //json
         timeStamp = {{ timeStamp|safe }}
         heaID = '#showH' + timeStamp
         resID = '#showR' + timeStamp
         errID = '#error-span' + timeStamp
         resultType = '{{resultType|safe}}'
+
+    format(hea, heaID, errID)
+    setTimeout(format(hea, heaID, errID), 1000);
+
     if(resultType=='json'){
+        res = {{ showR|safe }}
         format(res, resID, errID)
         setTimeout(format(res, resID, errID), 1000);
     }
-    format(hea, heaID, errID)
-    
-    setTimeout(format(hea, heaID, errID), 1000);
+
 </script>

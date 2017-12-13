@@ -1,5 +1,14 @@
 {% load staticfiles %}
-<span class="label label-primary">共计 {{ show_list|length }} 条</span>
+<span class="label label-primary">共计 {{ show_list|length }} 条</span><br>
+<div class="btn-group btn-group-sm">
+    <button type="button" class="btn btn-default" id="makeGroup" data-toggle="modal" data-target="#addEnv"><span class="glyphicon glyphicon-plus " aria-hidden="true"></span> 添加到用例集</button>
+    <button type="button" id='delCases' class="btn btn-danger" data-toggle="modal" data-target="#addEnv"><span class="fa fa-trash" aria-hidden="true"></span> 批量删除</button>
+</div>
+<div class="alert alert-danger alert-dismissible" style='display:none'>
+    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+    <h4><i class="icon fa fa-ban"></i> </h4>
+</div>
+
 <table id="tableList" data-toggle="table" data-striped="true" data-show-columns="true" data-row-style="rowStyle" style="word-break:break-all;"  data-click-to-select="true" data-query-params="queryParams" data-search="true" data-show-export="true" data-response-handler="responseHandler">
     <thead>
         <tr>
@@ -10,6 +19,9 @@
             </th>
             <th data-field="所属" data-sortable="true">
                 所属
+            </th>
+            <th data-field="品类">
+                品类
             </th>
             <th data-field="备注">
                 备注
@@ -38,6 +50,7 @@
         <td>{{ x.id }}</td>
         <td><div name="caseName">{{ x.caseName }}</div></td>
         <td>{{ x.owner.username }}</td>
+        <td>{{ x.ci.cname }}</td>
         <td>{{ x.des }}</td>
         <td>
             {% if x.status == '1' %}
@@ -46,12 +59,12 @@
                 <i class='fa fa-circle text-yellow'></i>
             {% else %}
                 <i class='fa fa-circle text-red'></i>{% endif %}</td>
-        <td>{% if x.caseGroup %}{% for y in x.caseGroup %}<span class="label label-primary">{{y}}</span>{%endfor%}{% else %}<i class='fa fa-circle text-red'></i>{% endif %} </td>
+        <td>{% if x.groupid %}<span class="label label-primary">{{x.groupid}}</span>{% else %}<i class='fa fa-circle text-red'></i>{% endif %} </td>
         <td>{{ x.modify_time|date:"Y-m-d H:i:s" }}</td>
         <td>
             <a type='button' class="btn btn-sm btn-default" href="/autoAPI/caseEdit/{{ x.id }}/"><span class="glyphicon glyphicon-pencil " aria-hidden="true"></span> </a>
             <button id='runID_{{x.id}}' type='button' class="caseRunBtn btn btn-sm btn-default"><span class="fa fa-play" aria-hidden="true"></span> </button>
-            <button id='delID_{{x.id}}' type='button' class="caseDelBtn btn btn-sm btn-default" data-target='' data-toggle=''><span class="fa fa-remove" aria-hidden="true"></span> </button>
+            <button id='copyID_{{x.id}}' type='button' class="caseCopyBtn btn btn-sm btn-default"  data-toggle="modal" data-target="#addEnv"><span class="fa fa-copy" aria-hidden="true"></span> </button>
         </td>
         <td>
             <!-- <small class="label bg-blue" id='progress_{{x.id}}'></small> -->
@@ -61,7 +74,7 @@
                 </div>
             </div>
             <a id='click_{{x.id}}' style='display:none' target=_blank><i class='fa fa-hand-pointer-o text-red'> </i></a>
-            </td>
+        </td>
     </tr>
     {% endfor %}
     </tbody>
@@ -79,6 +92,7 @@
         exportDataType: "basic", //导出类型
         toolbarAlign: 'right', //toolbar位置
     });
+
     $(function () {
         $table.on('click-row.bs.table', function (e, row, $element) {
                 $($element).toggleClass('success');
@@ -87,15 +101,35 @@
 </script>
 <script>
 
-    // $('.caseDelBtn').click(function(){
-    //     var btnID = $(this)[0].id
-    //         caseID = btnID.split('_')[1]
-    //     url = 'autoAPI/caseDel/' + caseID
-    //     $.get(url, {'caseID':caseID}, function(data){
-    //
-    //     })
-    // })
+    // add caseGroup check
+    $('#makeGroup').click(function(){
+        var checkID = checkList()
+        // 返回添加页面
+        $.get('/autoAPI/caseToGroup', {'ids':checkID}, function(ret){
+            $('#myModel').html(ret)
+        })
+    })
 
+    // del case check
+    $("#delCases").click(function(){
+        var checkID = checkList()
+
+        $.get('/autoAPI/caseDel', {'ids':checkID, 'type':'single'}, function(ret){
+            $('#myModel').html(ret)
+        })
+    })
+
+    // copy case single
+    $('.caseCopyBtn').click(function(){
+        var btnID = $(this)[0].id
+            caseID = btnID.split('_')[1]
+        url = '/autoAPI/caseCopy'
+        $.get(url, {'caseID':caseID}, function(ret){
+            $('#myModel').html(ret)
+        })
+    })
+
+    // run case single
     $('.caseRunBtn').click(function(){
         var btnID = $(this)[0].id
             caseID = btnID.split('_')[1]
@@ -103,20 +137,22 @@
             cliID = '#click_' + caseID // 点击按钮
             proBarID = '#progressBar_' + caseID // 点击按钮
             proSpanID = '#progressSpan_' + caseID // 点击按钮
+            ids = []
 
         url = '/autoAPI/caseRun'  // url
 
         $(cliID).hide()    // 每次点都隐藏点击 展示进度条
         $(proID).show()
+        ids.push(caseID)
 
-        $.get(url, {'type':'single', 'ids':caseID}, function(data){
+        $.get(url, {'type':'single', 'ids':ids}, function(data){
 
             var ref = "";
                 tt = data.timeStamp
                 count = 0
             //2. 定时刷新调用的方法
             function getProgress() {
-                $.getJSON("/autoAPI/intTestProgress",{'tt':tt}, function(data){
+                $.getJSON("/autoAPI/getTestProgress",{'tt':tt}, function(data){
                     if(data.num!=100){
                         // 设置进度条进度
                         $(proBarID).attr({'aria-valuenow':data.num,'style':'width:' + data.num + '%'})

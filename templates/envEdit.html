@@ -1,8 +1,8 @@
 <div class="modal-header">
   <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-  <h4 class="modal-title" id="myModalLabel">新增环境</h4>
+  <h4 class="modal-title" id="myModalLabel">新增公共参数</h4>
 </div>
-<form class="form" action="/autoAPI/addEnv" method="post">
+<form class="form" action="/autoAPI/envAdd" method="post">
     {% csrf_token %}
     <div class="modal-body">
       {{ aEForm }}

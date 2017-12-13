@@ -19,6 +19,9 @@ class CaseAddForm(forms.Form):
 		required=True,
 		error_messages={'required': '用例名不能为空.'})
 
+class CaseUpForm(forms.Form):
+	file = forms.FileField(label='通过Charles HAR 文件导入')
+
 class ForgetForm(forms.Form):
 	email = forms.EmailField(
 		widget=forms.TextInput(attrs={'type':'email', "class": "form-control", "placeholder": "注册邮箱", "name": "email"}),

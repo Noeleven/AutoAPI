@@ -13,17 +13,25 @@
                         <label for="caseId">用例ID</label>
                         <input type="text" class="form-control input-sm" id="caseId" placeholder="想要模糊匹配多个，请以+隔开，比如 1+2 表示所有id包含1或2的">
                     </div>
-                </div>
-                <div class="col-md-4">
                     <div class="form-group">
                         <label for="caseName">用例名称</label>
                         <input type="text" class="form-control input-sm" id="caseName" placeholder="想要模糊匹配多个，请以+隔开">
                     </div>
-                    <!-- <div class="form-group">
+                    <div class="form-group">
                         <label for="note">备注</label>
                         <input type="text" class="form-control input-sm" id="note" placeholder="想要模糊匹配多个，请以+隔开，比如 成功+通过">
                     </div>
+                </div>
+                <div class="col-md-4">
                     <div class="form-group">
+                        <label for="note">品类</label>
+                        <select multiple class="form-control input-sm" id="ci" placeholder="品类">
+                            {% for x in categorys %}
+                            <option value='{{x.id}}'>{{ x.cname }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <!-- <div class="form-group">
                         <label for="memGroup">小组</label>
                         <select multiple class="form-control input-sm" id="memGroup" placeholder="小组">
                             {% for x in memGroup %}
@@ -47,62 +55,8 @@
                 <button type="button" class="btn btn-primary" id="Search"><span class="glyphicon glyphicon-search"></span> Search</a>
                 <button type="button" class="btn btn-default" id="Reset"><span class="glyphicon glyphicon-refresh"></span> Reset</button>
             </div>
-            <p class="text-block text-primary">Ctrl + 鼠标点击可以 多选/取消选中; 什么都不选搜全部用例</p>
+            <!-- <p class="text-block text-primary">Ctrl + 鼠标点击可以 多选/取消选中; 什么都不选搜全部用例</p> -->
         </form>
-        <hr><!-- 按钮组 -->
-        <!-- <div class="btn-group btn-group-sm pull-right">
-            <button type="submit" class="btn btn-primary" id="makeGroup"><span class="glyphicon glyphicon-plus xwcms" aria-hidden="true"></span> 添加到用例集</button>
-            <button type="submit" class="btn btn-warning" id="exCases"><span class="glyphicon glyphicon-flag xwcms" aria-hidden="true"></span> 置为过期</button>
-            <button type="submit" class="btn btn-danger" id="delCases"><span class="glyphicon glyphicon-remove xwcms" aria-hidden="true"></span> 批量删除</button>
-        </div> -->
-        <!-- 删除确认 -->
-        <!-- <div id='delconfirm' class="alert alert-default alert-dismissible fade in" role="alert" style="display:none">
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close"></button>
-            <h4 id='titleee'>信息确认</h4><br>
-            <li id='del_mess' class="list-group-item list-group-item-danger">
-                {% for x in delcase %}
-                {{ x }}
-                {% endfor %}
-            </li>
-            <p id='del_butt'>
-                <button type="button" class="btn btn-danger" id="delSure">Just Do it!</button>
-                <button type="button" class="btn btn-default" id="cancle">Cancle</button>
-            </p>
-        </div> -->
-        <!-- 添加用例集 -->
-        <!-- <div  id='makeconfirm' style="display:none">
-            <div class="alert alert-default alert-dismissible fade in row" role="alert">
-                <h4 id='titleee'>设置用例集</h4>
-                <div class="form-group">
-                    <label for="check" class="col-sm-2 control-label">设置用例集</label>
-                    <div class="col-sm-4">
-                        <div class="form-group">
-                            <select class="editable-select-m form-control input-sm" id="gourpName" required>
-                                <option></option>
-                                {% for x in casegroup %}
-                                <option>{{ x.groupName }}</option>
-                                {% endfor %}
-                            </select>
-                            <span id="helpBB" class="help-block">选择加入某个已有用例集 或 输入新用例集名称新建</span>
-                        </div>
-                        <div class="form-group">
-                            <select class="editable-select-m form-control input-sm" id="groupVersion" required>
-                                <option></option>
-                                {% for x in versionList %}
-                                <option>{{x}}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="help-block">如果 选择了 新建用例集 请选择对应版本号</span>
-                        </div>
-                    </div>
-                </div>
-                <div id='make_butt'>
-                    <button type="button" class="btn btn-success btn-sm" id="makeSure">确定</button>
-                    <button type="button" class="btn btn-default btn-sm" id="makecancle">Cancle</button>
-                </div><br>
-            </div>
-            <p id='make_mess' class='bg-danger text-center'></p>
-        </div> -->
         <br>
         <!-- 结果列表 -->
         <div id="my_table"></div>
@@ -110,20 +64,21 @@
 </div>
 
 <script>
+
     $(document).ready(function(){
       $("#Search").click(function(){
         if ($("#caseId").val()){caseId = $("#caseId").val().split("+");}else{caseId = null};
         if ($("#caseName").val()){caseName = $("#caseName").val().split("+");}else{caseName = null};
-        // if ($("#caseType").val()){caseType = $("#caseType").val();}else{caseType = null};
+        if ($("#ci").val()){ci = $("#ci").val();}else{ci = null};
         // if ($("#plantform").val()){plantform = $("#plantform").val();}else{plantform = null};
         // if ($("#version").val()){version = $("#version").val();}else{version = null};
         if ($("#owner").val()){owner = $("#owner").val();}else{owner = null};
-        // if ($("#note").val()){note = $("#note").val().split("+");}else{note = null};
+        if ($("#note").val()){note = $("#note").val().split("+");}else{note = null};
         // if ($("#memGroup").val()){memGroup = $("#memGroup").val();}else{memGroup = null};
 
         $.post("{% url 'caseSearch' %}",
-            {'caseId':caseId,'caseName':caseName,
-            // 'caseType':caseType,'plantform':plantform,'version':version,
+            {'caseId':caseId,'caseName':caseName,'ci':ci,'note':note,
+            // 'plantform':plantform,'version':version,
             'owner':owner,
             // 'note':note,'memGroup':memGroup
             }, function(ret){

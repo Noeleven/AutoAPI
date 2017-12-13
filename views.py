@@ -8,14 +8,12 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.urls import reverse
 from .forms import *
-import time
-import json
-import datetime
-import random
-import string
-import requests
+from .package.Test_Process import TestProcess
 from AutoAPI.models import *
+from PIL import Image
+from io import BytesIO
 import threading
+import time, json, os, datetime, random, string, requests, copy
 
 
 # Create your views here.
@@ -24,9 +22,52 @@ import threading
 def genkey(length=8,chars=string.ascii_letters+string.digits):
     return ''.join([choice(chars) for x in range(length)])
 
+def parseHAR(f):
+    harStr = ''
+    for chunk in f.chunks():
+        harStr += str(chunk, encoding='utf-8')
+    lines = json.loads(harStr)
+    caseStep = []
+
+    index = 1
+    for x in lines['log']['entries']:
+        # header
+        headers = {}
+        for y in x['request']['headers']:
+            headers[y['name'].strip(':')] = y['value']
+        for y in x['request']['cookies']:
+            headers[y['name'].strip(':')] = y['value']
+
+        # post body
+        body = {}
+        for y in x['request']['queryString']:
+            body[y['name']] = y['value']
+            if y['name'] == 'method':
+                des = y['value']
+
+        if x['request']['method'] == 'POST':
+            body['mimeType'] = x['request']['postData']['mimeType']
+            for y in x['request']['postData']['params']:
+                body[y['name']] = y['value']
+
+        # 单步骤
+        tmp = {
+            'check':[],
+            'des':des,
+            'url':x['request']['url'],
+            'index':index,
+            'body':body,
+            'argv':[],
+            'method': x['request']['method'],
+            }
+        index += 1
+        caseStep.append(tmp)
+
+    return caseStep, headers
+
 '''login'''
 # 登录
-def login(request):
+def signLogin(request):
     if request.method == 'POST':
         form = UserForm(request.POST)
         if form.is_valid():
@@ -57,10 +98,10 @@ def login(request):
                     # 登录失败
                     content = {'message':'账号密码错误'}
 
-    return render(request,'login.html', locals())
+    return render(request,'signLogin.html', locals())
 
 # 注册
-def register(request):
+def signRegister(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
@@ -77,10 +118,10 @@ def register(request):
     else:
         form = RegisterForm()
     # error = form.errors
-    return render(request,'register.html',locals())
+    return render(request,'signRegister.html',locals())
 
 # 忘记密码
-def forget(request):
+def signForget(request):
     if request.method == 'POST':
         form = ForgetForm(request.POST)
         if form.is_valid():
@@ -100,10 +141,10 @@ def forget(request):
     else:
         form = ForgetForm()
     print(form.errors)
-    return render(request,'forget.html',locals())
+    return render(request,'signForget.html',locals())
 
 # 登出
-def logout(request):
+def signLogout(request):
     auth.logout(request)
     return HttpResponseRedirect('/autoAPI')
 
@@ -113,6 +154,7 @@ def logout(request):
 def apiIndex(request):
     return render(request,'apiIndex.html',locals())
 
+# 添加用例
 @login_required
 def caseAdd(request):
     """新增用例"""
@@ -136,6 +178,7 @@ def caseAdd(request):
     pageNote = ''
     return render(request,'caseAdd.html',locals())
 
+# 用例编辑
 @login_required
 def caseEdit(request, a):
     """编辑用例"""
@@ -143,14 +186,19 @@ def caseEdit(request, a):
     envs = Env.objects.filter(status='1')
     pageTitle = '用例编辑'
     pageNote = ''
+    categorys = category.objects.all()
+
+    form = CaseUpForm()
 
     if request.method == 'POST':
-        print(request.POST)
         myData = request.POST
         # baseinfo
         case.caseName = myData['caseName']
         case.des = myData['caseDes']
+        case.status = myData['caseStatus']
+        case.ci = category.objects.get(id=myData['category'])
         case.enviID = Env.objects.get(id=myData['choiceEnv'])
+
         # header
         headerKey = myData.getlist('headerKey')
         headerValue = myData.getlist('headerValue')
@@ -208,34 +256,75 @@ def caseEdit(request, a):
             story = json.loads(case.story)
     return render(request,'caseEdit.html',locals())
 
+# 上传文件
 @login_required
-def addEnv(request):
+def upload(request):
+    try:
+        form = CaseUpForm(request.POST, request.FILES)
+    except:
+        print('upload error')
+    else:
+        if form.is_valid():
+            try:
+                result = parseHAR(request.FILES['file'])
+                caseStep = result[0]
+                headers = result[1]
+            except:
+                mess = '解析文件出错'
+            else:
+                case = cases.objects.get(id=request.POST['caseID'])
+                story = {'caseID': request.POST['caseID'], 'caseStep': caseStep}
+                case.story = json.dumps(story)
+                case.header = json.dumps(headers)
+                case.save()
+                mess = '解析成功'
+        else:
+            mess = '上传失败'
+
+        print(mess)
+
+        return HttpResponseRedirect('/autoAPI/caseEdit/%s' % request.POST['caseID'])
+
+# 添加环境
+@login_required
+def envAdd(request):
     """编辑用例--增加环境"""
     if request.method == 'POST':
         try:
             envName = request.POST['envName']
             des = request.POST['des']
             content = request.POST['content']
+            username = User.objects.get(username=request.META['USER'])
             # save data
-            if Env.objects.filter(envName=envName):
-                message = [u'该环境已经存在，请重新命名']
-            else:
-                p = Env(envName=envName, des=des, content=content)
-                username = User.objects.get(username=request.META['USER'])
-                p.createUser = username.id
+            try:
+                envId = request.POST['envId']   # 有id是编辑
+                p = Env.objects.get(id=envId)
+                p.envName = envName
+                p.des = des
+                p.content = content
                 p.ModifyUser = username.id
                 p.save()
-                message = [u'保存成功']
+                message = [u'编辑成功']
+            except:
+                if Env.objects.filter(envName=envName): # 没id是新建
+                    message = [u'该环境已经存在，请重新命名']
+                else:
+                    p = Env(envName=envName, des=des, content=content)
+                    p.createUser = username.id
+                    p.ModifyUser = username.id
+                    p.save()
+                    message = [u'新建成功']
         except:
-            message = [u'保存异常']
+            message = [u'something err']
         return HttpResponse(json.dumps(message), content_type='application/json')
     else:
         content = '{"firstChannel":"Android","secondChannel":"XIAOMI","globalLongitude":"121.398318","globalLatitude":"31.241757","lvsessionid":"96d84d8c-eafd-4a2b-a0ee-77532a78f044"}'
 
-    return render(request,'addEnv.html',locals())
+    return render(request,'envAdd.html',locals())
 
+# 选择环境
 @login_required
-def getEnvSelect(request):
+def envGetSelect(request):
     """编辑用例--更新环境列表"""
     try:
         # 有id就编辑的情况
@@ -244,31 +333,27 @@ def getEnvSelect(request):
     except:
         # 没id就刷新的情况
         envs = Env.objects.filter(status='1')
-        return render(request,'getEnvSelect.html',locals())
+        return render(request,'envGetSelect.html',locals())
     else:
-        return render(request,'addEnv.html',locals())
+        return render(request,'envAdd.html',locals())
 
+# 环境编辑
 @login_required
-def editEnv(request, a):
+def envEdit(request, a):
     """编辑用例--编辑环境"""
     env = Env.objects.get(id=int(a))
-    aEForm = addEnvForm()
+    aEForm = envAddForm()
     errors = aEForm.errors
-    return render(request,'editEnv.html',locals())
+    return render(request,'envEdit.html',locals())
 
-@login_required
-def saveEnv(request, a):
-    """编辑用例--保存环境"""
-    env = Env.objects.get(id=int(a))
-
-@login_required
-def caseList(request):
-    return render(request,'caseList.html',locals())
-
+# 用例查询
 @login_required
 def caseSearch(request):
-    pageTitle = '用例查询'
+    # 查询选项列表
     user_list = User.objects.filter(is_active='1')
+    categorys = category.objects.all()
+
+    # 提交查询
     if request.method == 'POST':
         myRequest = dict(request.POST)
         # 处理下key带[]的问题
@@ -277,6 +362,8 @@ def caseSearch(request):
             if '[]' in k:
                 k1 = k.replace('[]','')
                 myrequest[k1] = v
+
+        # 用例列表
         origin = cases.objects.all()
         # 对于小组，找出组员，把名字添加到owner列表中即可
         # try:
@@ -301,14 +388,14 @@ def caseSearch(request):
                         if_list[m] += origin.filter(id__contains=x)
                     elif m == 'caseName':
                         if_list[m] += origin.filter(caseName__contains=x)
-                    # elif m == 'caseType':
-                    #     if_list[m] += origin.filter(type_field__type_name__contains=x)
+                    elif m == 'ci':
+                        if_list[m] += origin.filter(ci__id=x)
                     # elif m == 'plantform':
                     #     if_list[m] += origin.filter(plantform__contains=x)
                     # elif m == 'version':
                     #     if_list[m] += origin.filter(version__contains=x)
-                    # elif m == 'note':
-                    #     if_list[m] += origin.filter(des__contains=x)
+                    elif m == 'note':
+                        if_list[m] += origin.filter(des__contains=x)
                     elif m == 'owner':
                         if_list[m] += origin.filter(userID__contains=x)
                     else:
@@ -333,18 +420,22 @@ def caseSearch(request):
         for x in show_list:
             if x.userID:
                 x.owner = User.objects.get(id=x.userID)
-        #     if x.groupId:
-        #         groupRange = json.loads(x.groupId)
-        #         x.caseGroup = [caseGroup.objects.get(id=y).groupName for y in groupRange]
+            if x.groupID:
+                x.groupid = (',').join([y.groupName for y in x.groupID.all()])
+
         return render(request,'caseSearchResult.html', locals())
+    # 默认页面加载
     else:
         return render(request,'caseSearch.html',locals())
 
+# 用例内单步骤测试
 @login_required
-def uniTest(request):
+def caseUniTest(request):
     # 解析参数
     timeStamp = str(int(time.time())) + str(random.randint(000000,999999))
-    header = {'signal':'ab4494b2-f532-4f99-b57e-7ca121a137ca'}
+    # header = {'signal':'ab4494b2-f532-4f99-b57e-7ca121a137ca'}
+    header = {}
+    # print(request.POST)
     if request.POST['header']:
         header.update(json.loads(request.POST['header']))
 
@@ -358,15 +449,14 @@ def uniTest(request):
     if request.POST['body']:
         body = json.loads(request.POST['body'])
 
-    # check ,变量待定
     # 请求
     method = params['stepMethod']
     print(method,url,header,body)
     start = time.time()
     if method == 'GET':
-        r = requests.get(url, headers=header, params=body, timeout=30)
+        r = requests.get(url, headers=header, params=body, timeout=30, verify=False)
     else:
-        r = requests.post(url, headers=header, data=body, timeout=30)
+        r = requests.post(url, headers=header, data=body, timeout=30, verify=False)
     end = time.time()
     costTime = int((end - start) * 1000)
     # 记录
@@ -376,14 +466,22 @@ def uniTest(request):
         resultType = 'json'
         response = json.loads(resultText)
         showR = json.dumps(response)
+    elif 'image' in r.headers['Content-Type']:
+        resultType = 'image'
+        image = Image.open(BytesIO(r.content))
+        imageName = '%s.jpg' % request.META['USER']
+        path = os.path.abspath('.')
+        image.save('%s/AutoAPI/static/images/%s' % (path, imageName))
+        showR = '/static/images/%s' % imageName
     else:
-        resultType = 'text'
-        showR = resultText
+        resultType = 'html'
+        showRR = r.text
     headerText = r.headers
     showH = json.dumps(dict(headerText))
 
     return render(request,'showR.html',locals())
 
+# request 自测模块
 def myCaseRun(a,timeStamp):
     print('start %s' % a)
     start = time.time()
@@ -411,9 +509,9 @@ def myCaseRun(a,timeStamp):
         # request
         startreq = time.time()
         if x['method'] == 'GET':
-            r = requests.get(x['url'], headers=header, params=body, timeout=30)
+            r = requests.get(x['url'], headers=header, params=body, timeout=30, verify=False)
         else:
-            r = requests.post(x['url'], headers=header, data=body, timeout=30)
+            r = requests.post(x['url'], headers=header, data=body, timeout=30, verify=False)
         endreq = time.time()
         reqcostTime = int((endreq - startreq) * 1000)
 
@@ -464,33 +562,50 @@ def myCaseRun(a,timeStamp):
     p.save()
     print('end %s' % a)
 
+# 线程模式封装
+def reqToNg(cases, timeStamp):
+    worker = [[] for x in range(0,9)]   # 默认9台
+    while cases:
+        for x in worker:
+            if cases:
+                id = cases[0]
+                x.append(str(id))
+                cases.remove(id)
+    # print(worker)
+    for x in worker:
+        if x:
+            r = requests.get('http://10.115.1.206/clone', params={'cases':','.join(x), 'timestamp':timeStamp})
+            print(r.status_code)
+
 @login_required
 def caseRun(request):
     params = dict(request.GET)
-    # 判断是否重测
+    # 重测覆盖，新测生成
     if 'timeStamp' in params.keys():
-        timeStamp = params['timeStamp']
+        timeStamp = params['timeStamp'][0]
     else:
         timeStamp = str(int(time.time())) + str(random.randint(000000,999999))
+
     username = User.objects.get(username=request.META['USER'])  # 获取驱动测试人
     testSQL = {}
 
     # single or gather
-    a = params['ids']
+    a = request.GET.getlist('ids[]')
+
     if request.GET['type'] == 'single':
         # 单用例或多个单用例
         case = [cases.objects.get(id=x) for x in a]
     else:
         # 单用例集, 不支持多个用例集一起测
         group = caseGroup.objects.get(id=a[0])
-        case = [cases.objects.get(id=x) for x in json.loads(group.caseID)]
+        case = group.cases_set.all()
         # 预存用例集记录
-        # timeStamp = str(int(time.time())) + str(random.randint(000000,999999))
         f = groupRecords(timeStamp=timeStamp)
-        f.groupID = a
+        f.groupID = a[0]
         f.testUser = username.id
         f.save()
-    testSQL = {'id':[x.id for x in case],'timeStamp':timeStamp}
+
+    testSQL = {'id':[x.id for x in case], 'timeStamp':timeStamp}
 
     for x in case:
         # 预存用例结果
@@ -498,12 +613,8 @@ def caseRun(request):
             d = results(timeStamp=timeStamp)  # 首次创建，重测覆盖
             d.caseID = x.id
             d.testUser = username.id
-            d.progress = -1
+            d.progress = 0
             d.save()
-
-        # 待替换为清扬的request后撤销
-        t = threading.Thread(target=myCaseRun, args=(x.id, timeStamp), name='myCaseRun')
-        t.start()
 
     # 存配置供应接口, 第一次生成，重跑不变
     if not myConfig.objects.filter(timeStamp=timeStamp):
@@ -511,29 +622,41 @@ def caseRun(request):
         p.timeStamp = timeStamp
         p.save()
 
-    data = {'timeStamp':p.timeStamp}
-    # 预留调接口
+    data = {'timeStamp':timeStamp}
+
+    # 调接口
+    # t = threading.Thread(target=myCaseRun, args=(x.id, timeStamp), name='myCaseRun')  # 本系统自测
+    # t = threading.Thread(target=TestProcess, args=([x.id for x in case], timeStamp), name='TestProcess')  # 本机对接client
+    t = threading.Thread(target=reqToNg, args=([x.id for x in case], timeStamp), name='toNG')     # 对接ng
+    t.start()
+
+    print('启动agent:ids %s, timeStamp %s' % ([x.id for x in case], timeStamp))
+
     return HttpResponse(json.dumps(data), content_type="application/json")
 
 @login_required
-def intTestProgress(request):
+def getTestProgress(request):
+    # 圈范围
     result = results.objects.filter(timeStamp=request.GET['tt'])
     findNow = [int(x.progress) for x in result]
+
     if findNow:
-        now = (sum(findNow) / (len(findNow) * 100)) * 100
-        data = {'num':now}
+        now = round((sum(findNow) / (len(findNow) * 100)) * 100)
     else:
-        data = {'num':'null'}
+        now = 100
+    data = {'num':now}
+
+    groupRecords.objects.filter(timeStamp=request.GET['tt']).update(progress=now)
 
     return HttpResponse(json.dumps(data), content_type="application/json")
 
 @login_required
-def getReport(request):
+def reportSearch(request):
     pageTitle = '测试报告'
-    return render(request,'getReport.html',locals())
+    return render(request,'reportSearch.html',locals())
 
 @login_required
-def getReportAjax(request):
+def reportSearchList(request):
     daterange = request.GET['daterange']
     startTime = daterange.replace(' ','').split('-')[0] + ' 00:00:00'
     endTime =  daterange.replace(' ','').split('-')[1] + ' 23:59:59'
@@ -542,24 +665,34 @@ def getReportAjax(request):
 
     reportType = request.GET['reportType']
     if reportType == '1':
-        result = results.objects.filter(create_time__range=(start, end)).filter(timeStamp='')
+        result = results.objects.filter(create_time__range=(start, end))
     else:
         result = groupRecords.objects.filter(create_time__range=(start, end))
+
     if result:
         for x in result:
             if reportType == '1':
                 x.name = cases.objects.get(id=x.caseID).caseName
             else:
                 group = caseGroup.objects.get(id=x.groupID)
-                # group的进度计算一下
-                orilen = len(json.loads(group.caseID))
-                actlen = results.objects.filter(timeStamp=x.timeStamp).count()
-                x.progress = (actlen/orilen) * 100
+                # 通过率
+                sourceList = results.objects.filter(timeStamp=x.timeStamp)
+                allNum = len(json.loads(myConfig.objects.get(timeStamp=x.timeStamp).caseInfo)['id'])
+                passNum = sourceList.filter(status='success').count()
+                testNum = sourceList.count()
+                # 运行时间
+                start = sourceList.order_by('create_time')[0].create_time.timestamp()
+                end = sourceList.order_by('-modify_time')[0].modify_time.timestamp()
+
+                x.progress = round((testNum / allNum) * 100)
+                x.costTime = int((end - start) * 1000)
                 x.save()
+                x.passRate = round((passNum / allNum) * 100)
                 x.name = group.groupName
+
             x.tester = User.objects.get(id=x.testUser).username
 
-    return render(request,'getReportAjax.html',locals())
+    return render(request,'reportSearchList.html',locals())
 
 @login_required
 def reportDetail(request):
@@ -569,7 +702,10 @@ def reportDetail(request):
     actual = expert.exclude(progress=-1)   # 实际条数
     startTime = expert.order_by('create_time')[0].create_time   # 存库开始计时
     endTime = actual.order_by('-modify_time')[0].modify_time   # 最后修改结束计时
-    totalTime = round(((endTime - startTime).seconds / 60), 2)
+    if endTime > startTime:
+        totalTime = round(abs(((endTime - startTime).seconds / 60)), 2)
+    else:
+        totalTime = round(abs(((startTime - endTime).seconds / 60)), 2)
     passList = actual.filter(status='success')  # 成功列表
     errList = actual.filter(status='danger')    # 失败列表
     passRate = round(passList.count() / actual.count() * 100) # 通过率
@@ -615,40 +751,238 @@ def reportDetail(request):
     return render(request,'resultDetail.html',locals())
 
 @login_required
-def getSnapShot(request):
+def reportSnapShot(request):
     target = json.loads(results.objects.get(id=request.GET['id']).testResultDoc)
     tt,rr = [],[]
 
     for x in target['entries']:
-        if 'application/json' in x['response']['header']['Content-Type']:
-            tt.append('json')
-            rr.append(json.loads(x['response']['data']))
-        else:
+        try:
+            if 'application/json' in x['response']['header']['Content-Type']:
+                tt.append('json')
+                rr.append(json.loads(x['response']['data']))
+                x['myType'] = 'json'
+            else:
+                tt.append('')
+                rr.append('')
+                x['myType'] = 'other'
+        except:
             tt.append('')
             rr.append('')
+            x['myType'] = 'other'
+
+        startNum = 1
+        for y in x['request']['check_str_list']:
+            y['check'] = x['check'][startNum]
+            startNum += 1
+
     res = json.dumps(rr)
 
-    return render(request,'getSnapShot.html',locals())
+    return render(request,'reportSnapShot.html',locals())
 
-# 重构失败用例
 @login_required
-def intRetry(request):
-    ids = request.GET['ids']
-    message = '测试已启动，请关注用例集报告'
-    return HttpResponse(message)
+def caseDel(request):
+    if request.method == 'POST':
+        myType = request.POST['type']   # 区分用例/用例集
+        justDo = '0'    # 提交按钮状态
+        ids = request.POST.getlist('ids[]') # 用例/用例集ID列表
+        try:
+            for x in ids:
+                if myType == 'group':
+                    case = caseGroup.objects.get(id=x)
+                    case.cases_set.clear()
+                else:
+                    case = cases.objects.get(id=x)
+                    case.groupID.clear()
+                case.status = '-1'
+                case.save()
 
+            data = {'content':"删除成功"}
+        except:
+            data = {'content':"删除失败"}
+
+        return HttpResponse(json.dumps(data), content_type="application/json")
+    else:
+        myType = request.GET['type']
+        ids = request.GET.getlist('ids[]')
+        if(ids):
+            content = '请确认待删除的 用例/用例集 ID %s' % (',').join(ids)
+            justDo = '1'
+        else:
+            content = '请先选择'
+            justDo = '0'
+
+        return render(request, 'ModalDel.html', locals())
+
+@login_required
+def caseCopy(request):
+    # case or group
+    try:
+        ids = request.GET['caseID']
+        origin = cases.objects.get(id=ids)
+        b = copy.deepcopy(origin)
+        b.id = None
+        b.userID = User.objects.get(username=request.META['USER']).id
+        b.save()
+
+        content = 'Copy 成功'
+    except:
+        content = 'Copy 失败'
+
+    return render(request, 'ModalCopy.html', locals())
+
+
+''' 用例集 '''
+# 添加用例集
+@login_required
+def caseToGroup(request):
+    if request.method == 'POST':
+        justDo = '0'    # 提交按钮状态
+        ids = request.POST.getlist('ids[]')
+        groupName = request.POST['groupName']
+
+        group = caseGroup.objects.filter(status='1').filter(groupName=groupName)
+        # try:
+        if group: # 前端有传groupID，就添加到用例集
+            group = caseGroup.objects.get(groupName=groupName)
+        else:
+            group = caseGroup(groupName=groupName)
+            group.modifyUser = User.objects.get(username=request.META['USER']).id
+            group.caseID = json.dumps(ids)
+            group.save()
+
+        # 更新用例--集合关联关系
+        for x in ids:
+            case = cases.objects.get(id=x)
+            case.groupID.add(group)
+            case.save()
+
+        data = {'content':"添加成功"}
+        # except:
+        #     data = {'content':"添加失败"}
+
+        return HttpResponse(json.dumps(data), content_type="application/json")
+    else:
+        ids = request.GET.getlist('ids[]')
+        if(ids):
+            groups = caseGroup.objects.filter(status='1')
+            justDo = '1'
+        else:
+            content = '请先选择用例'
+            justDo = '0'
+
+        return render(request, 'ModalCaseToGroup.html', locals())
+
+# 用例集列表页
 @login_required
 def caseGroupList(request):
-    return render(request,'caseGroupList.html',locals())
+    groups = caseGroup.objects.filter(status='1')
+    for x in groups:
+        x.num = x.cases_set.all().count()
 
-@login_required
-def teamManager(request):
-    return render(request,'teamManager.html',locals())
+    if request.method == 'POST':
+        # 列表页刷新表格接口
+        return render(request, 'caseGroupTable.html', locals())
+    else:
+        # 默认加载列表页
+        return render(request, 'caseGroupList.html', locals())
 
-@login_required
-def teamList(request):
-    return render(request,'teamList.html',locals())
+# 用例集编辑
+def caseGroupEdit(request):
+    if request.method == 'POST':
+        group = caseGroup.objects.get(id=request.POST['id'])
+        print(request.POST)
+        # groupSave
+        oldCases = group.cases_set.all()
+        # 去除原用例集关联
+        for x in oldCases:
+            x.groupID.remove(group)
+            x.save()
 
-@login_required
-def teamEdit(request):
-    return render(request,'teamEdit.html',locals())
+        if request.POST.get('groupListBox'):
+            myCaseId = [int(x.split('-')[1]) for x in request.POST.getlist('groupListBox')]
+            # 更新用例 增加用例集关联
+            for x in myCaseId:
+                case = cases.objects.get(id=x)
+                case.groupID.add(group)
+                case.save()
+        else:
+            myCaseId = []
+
+        group.groupName = request.POST['groupName']
+        group.des = request.POST['des']
+        group.modifyUser = User.objects.get(username=request.META['USER']).id
+        group.save()
+
+        return HttpResponseRedirect('/autoAPI/caseGroupList')
+
+    else:
+        # groupEdit
+        group = caseGroup.objects.get(id=request.GET['id'])
+        caseIDS = [x.id for x in group.cases_set.all()]
+        allCase = cases.objects.filter(status='1')
+
+        for x in allCase:
+            if x.id in caseIDS:
+                x.sta = 'checked'
+            else:
+                x.sta = 'unchecked'
+
+            if x.status == '1':
+                x.status = '可用'
+            else:
+                x.status = '不可用'
+
+        return render(request, 'caseGroupEdit.html', locals())
+
+
+'''小组管理'''
+# 小组列表
+# def memGroupList(request):
+#     memGroup = userGroup.objects.all()
+#     nav_list = navList()
+#     for x in memGroup:
+#         if x.groupUser:
+#             x.count = len(json.loads(x.groupUser))
+#         else:
+#             x.count = 0
+#     return render(request,'memGroupList.html',locals())
+# # 小组编辑
+# def memGroupEdit(request):
+#     allMem = caseUser.objects.filter(userStatus=1)
+#     nav_list = navList()
+#     try:
+#         groupID = request.GET['groupId']
+#     except KeyError as e:
+#         pass
+#     else:
+#         if groupID:
+#             groupID = request.GET['groupId']
+#             group = userGroup.objects.get(id=groupID)
+#             if group.groupUser:
+#                 gourpIDS = json.loads(group.groupUser)
+#                 print(gourpIDS)
+#                 for x in allMem:
+#                     if str(x.id) in gourpIDS:
+#                         x.status = 'checked'
+#                     else:
+#                         x.status = 'unchecked'
+#
+#     return render(request,'memGroupEdit.html',locals())
+#
+# def memGroupSave(request):
+#     try:
+#         groupID = request.POST.get('groupID')
+#         if groupID:
+#             r = userGroup.objects.get(id=groupID)
+#         else:
+#             r = userGroup(groupName=request.POST.get('groupName'))
+#     except:
+#         r = userGroup(groupName=request.POST.get('groupName'))
+#     finally:
+#         r.groupName = request.POST.get('groupName')
+#         r.des = request.POST.get('des')
+#         if request.POST.get('groupListBox'):
+#             groupUser = request.POST.getlist('groupListBox')
+#             r.groupUser = json.dumps(groupUser)
+#         r.save()
+#     return HttpResponseRedirect('/auto/memGroupList')
