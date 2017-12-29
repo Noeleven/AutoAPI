@@ -8,13 +8,15 @@ class TestCaseInAuto(object):
         self.case_name = my_dict.get('case_name')
         self.request_headers = my_dict.get('request_headers')
         self.urls_list = my_dict.get('urls_list')
+        self.env = my_dict.get('env')
 
     def case_to_dict(self):
         d = {
             "id": self.id,
             "case_name": self.case_name,
             "request_headers": self.request_headers,
-            "urls_list": self.urls_list
+            "urls_list": self.urls_list,
+            "env": self.env
         }
         return d
 

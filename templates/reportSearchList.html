@@ -1,4 +1,5 @@
-<table class='table table-condensed'>
+{% load staticfiles %}
+<table id="tableList" class='table table-condensed' data-toggle="table" data-striped="true" data-show-columns="true" data-row-style="rowStyle" style="word-break:break-all;"  data-click-to-select="true" data-query-params="queryParams" data-search="true" data-show-export="true" data-response-handler="responseHandler">
     <thead>
         <tr><th>ID</th><th>名称</th><th>测试人</th><th>启动时间</th><th>进度</th><th>通过</th><th>耗时</th><th>操作</th>
         </tr>
@@ -27,3 +28,4 @@
         {% endif %}
     </tbody>
 </table>
+{% include "baseTable.html" %}

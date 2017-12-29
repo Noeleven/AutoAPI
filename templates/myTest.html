@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title> ttttt </title>
+    {% load staticfiles %}
+    <!-- Bootstrap -->
+    <link href="{% static 'dist/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+    <script src="assets/js/ie8-responsive-file-warning.js"></script>
+    <![endif]-->
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+<body>
+    <div class='col-md-6 col-md-offset-3'>
+        <hr>
+        <form class="form" method="post" enctype="multipart/form-data">
+            <!-- <input id="fileupload" type="file" name="files[]"> -->
+            {% csrf_token %}
+            {{form}}
+            <input type="text" id="caseID" value="7">
+            <button id='upload' type="button" name="button" class='btn btn-default'>upload</button>
+        </form>
+    </div>
+
+    <script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="{% static 'dist/js/bootstrap.min.js' %}"></script>
+    <script>
+        $('#upload').click(function(){
+            var id = $('#caseID').val()
+                file = $('#id_file').get(0).files[0]
+                // $('#id_file').change(function(e){
+                //     console.log(e)
+                //     file = e//e就是你获取的file对象
+                // })
+            if(file){
+                $.post('/autoAPI/myTest', {'file':file,'csrfmiddlewaretoken':'{{ csrf_token }}', 'caseID':id}, function(data){
+                    alert(data.mess)
+                })
+            }else{
+                alert('no file')
+            }
+
+        })
+
+    </script>
+</body>
+</html>

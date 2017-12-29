@@ -1,9 +1,10 @@
 import pymysql
 import json
 import datetime
-from .CloneTestTools import Tools
-from .CloneTestTools import LvLog
-from .moudle_request import TestCaseInAuto
+
+from CloneTestTools import Tools
+from CloneTestTools import LvLog
+from moudle_request import TestCaseInAuto
 
 logs = LvLog("CloneTestDB")
 tools = Tools()
@@ -27,7 +28,17 @@ class ReadCase:
 
     def db_select_case_id(self, timestamp, case_id):
         data0 = self.read_data(case_id, timestamp, sql="sql_select_results_to_change")
-        return data0[0]
+        if data0:
+            return data0[0]
+        else:
+            return None
+
+    def db_select_env(self, env_id):
+        data0 = self.read_data(env_id, sql="sql_select_env")
+        if data0:
+            return json.loads(data0[3])
+        else:
+            return None
 
     @staticmethod
     def read_data(*args, **kwargs):
@@ -53,7 +64,8 @@ class ReadCase:
             "id": data[0],
             "case_name": data[1],
             "request_headers": json.loads(data[4]),
-            "urls_list": list(json.loads(data[3]).get("caseStep"))
+            "urls_list": list(json.loads(data[3]).get("caseStep")),
+            "env": data[9]
         }
         case0 = TestCaseInAuto(dict_urls)
         logs.logger.info(case0)

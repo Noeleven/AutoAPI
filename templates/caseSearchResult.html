@@ -80,25 +80,7 @@
     </tbody>
 </table>
 
-<script src="{% static 'js/bootstrap-table.js' %}"></script>
-<script src="{% static 'js/bootstrap-table-zh-CN.min.js' %}"></script>
-<script src="{% static 'js/bootstrap-table-export.js' %}"></script>
-<script src="{% static 'js/tableExport.js' %}"></script>
-<script>
-    var $table = $('#tableList');
-
-    $table.bootstrapTable('destroy').bootstrapTable({
-        showExport: true, //显示导出按钮
-        exportDataType: "basic", //导出类型
-        toolbarAlign: 'right', //toolbar位置
-    });
-
-    $(function () {
-        $table.on('click-row.bs.table', function (e, row, $element) {
-                $($element).toggleClass('success');
-        });
-    });
-</script>
+{% include "baseTable.html" %}
 <script>
 
     // add caseGroup check

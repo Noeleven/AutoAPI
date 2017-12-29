@@ -204,8 +204,9 @@
             <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i> 配置</a>
           </li>
           <li>
-            <a href="/autoAPI/signLogout">Hi, {{ request.META.USER }}  <i class="fa fa-sign-out"> </i> 退出</a>
+            <a href="#">Hi, {{ request.user.username }}</a>
           </li>
+          <li><a href="/autoAPI/signLogout"><i class="fa fa-sign-out"> </i> 退出</a></li>
         </ul>
       </div>
     </nav>

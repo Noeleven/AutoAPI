@@ -41,7 +41,7 @@ class ForgetForm(forms.Form):
 
 class RegisterForm(forms.Form):
 	username = forms.CharField(
-		widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "登录账号", "name": "username"}),
+		widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "建议中文姓名, 可用于登录", "name": "username"}),
 		max_length=30,
 		required=True,
 		error_messages={'required': '用户名不能为空.','max_length':'请不要超过30个字符'})

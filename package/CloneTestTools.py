@@ -2,15 +2,14 @@
 
 import configparser
 import logging
-import os
 
 class Tools:
-    cf_path = os.path.abspath('.') + '/AutoAPI/package/' + "config.ini"
+
+    cf_path = "config.ini"
 
     def tools_read_config(self):
         cf = configparser.ConfigParser()
         cf.read(self.cf_path, "utf-8")
-        
         d = {
             "db_host": cf.get("db", "db_host"),
             "db_user": cf.get("db", "db_user"),
@@ -18,6 +17,7 @@ class Tools:
             "db_name": cf.get("db", "db_name"),
 
             "sql_select_one_case": cf.get("sql", "sql_select_one_case"),
+            "sql_select_env": cf.get("sql", "sql_select_env"),
             "sql_select_results_to_change": cf.get("sql", "sql_select_results_to_change"),
 
             "sql_update_results_progress": cf.get("sql", "sql_update_results_progress"),

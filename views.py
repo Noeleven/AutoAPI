@@ -14,13 +14,14 @@ from PIL import Image
 from io import BytesIO
 import threading
 import time, json, os, datetime, random, string, requests, copy
+import pika, configparser
 
 
 # Create your views here.
 '''Tool'''
 # 随机密码函数
-def genkey(length=8,chars=string.ascii_letters+string.digits):
-    return ''.join([choice(chars) for x in range(length)])
+def genkey(length=8, chars=string.ascii_letters+string.digits):
+    return ''.join([random.choice(chars) for x in range(length)])
 
 def parseHAR(f):
     harStr = ''
@@ -65,9 +66,30 @@ def parseHAR(f):
 
     return caseStep, headers
 
+def pushMQ(cases, timeStamp):
+    conf = os.path.abspath('.') + '/AutoAPI/' + "config.ini"
+    cf = configparser.ConfigParser()
+    cf.read(conf, "utf-8")
+    host = cf.get("mq", "host")
+
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
+    channel = connection.channel()
+    for x in cases:
+        message = 'http://%s/clone?cases=%s&timestamp=%s' % (host, x, timeStamp)
+        channel.queue_declare(queue='task_queue', durable=True)
+        channel.basic_publish(exchange='',
+                            routing_key='task_queue',
+                            body=message,
+                            properties=pika.BasicProperties(
+                                delivery_mode=2,  # make message persistent
+                            ))
+    # print(" [x] Sent %r" % (message,))
+    connection.close()
+
 '''login'''
 # 登录
 def signLogin(request):
+    print(request.POST)
     if request.method == 'POST':
         form = UserForm(request.POST)
         if form.is_valid():
@@ -166,7 +188,7 @@ def caseAdd(request):
             story = {"caseID":p.id, "caseStep":[{'index':1}]}
             p.story = json.dumps(story, ensure_ascii=True)
 
-            p.userID = User.objects.get(username=request.META['USER']).id
+            p.userID = User.objects.get(username=request.user.username).id
             p.save()
             print(reverse('caseEdit', args=(p.id,)))
             return HttpResponseRedirect(reverse('caseEdit', args=(p.id,)))
@@ -247,7 +269,7 @@ def caseEdit(request, a):
             }
             story['caseStep'].append(d)
         case.story = json.dumps(story, ensure_ascii=True)
-        case.userID = User.objects.get(username=request.META['USER']).id
+        case.userID = User.objects.get(username=request.user.username).id
         case.save()
     else:
         if case.header:
@@ -294,7 +316,7 @@ def envAdd(request):
             envName = request.POST['envName']
             des = request.POST['des']
             content = request.POST['content']
-            username = User.objects.get(username=request.META['USER'])
+            username = User.objects.get(username=request.user.username)
             # save data
             try:
                 envId = request.POST['envId']   # 有id是编辑
@@ -364,7 +386,7 @@ def caseSearch(request):
                 myrequest[k1] = v
 
         # 用例列表
-        origin = cases.objects.all()
+        origin = cases.objects.filter(status='1')
         # 对于小组，找出组员，把名字添加到owner列表中即可
         # try:
         #     if myrequest['memGroup']:
@@ -469,7 +491,7 @@ def caseUniTest(request):
     elif 'image' in r.headers['Content-Type']:
         resultType = 'image'
         image = Image.open(BytesIO(r.content))
-        imageName = '%s.jpg' % request.META['USER']
+        imageName = '%s.jpg' % request.user.username
         path = os.path.abspath('.')
         image.save('%s/AutoAPI/static/images/%s' % (path, imageName))
         showR = '/static/images/%s' % imageName
@@ -481,8 +503,8 @@ def caseUniTest(request):
 
     return render(request,'showR.html',locals())
 
-# request 自测模块
-def myCaseRun(a,timeStamp):
+# request 自测模块 正式环境不用
+def myCaseRun(a, timeStamp):
     print('start %s' % a)
     start = time.time()
     case = cases.objects.get(id=a)
@@ -562,7 +584,7 @@ def myCaseRun(a,timeStamp):
     p.save()
     print('end %s' % a)
 
-# 线程模式封装
+# 线程模式封装 扑克牌大法
 def reqToNg(cases, timeStamp):
     worker = [[] for x in range(0,9)]   # 默认9台
     while cases:
@@ -586,7 +608,7 @@ def caseRun(request):
     else:
         timeStamp = str(int(time.time())) + str(random.randint(000000,999999))
 
-    username = User.objects.get(username=request.META['USER'])  # 获取驱动测试人
+    username = User.objects.get(username=request.user.username)  # 获取驱动测试人
     testSQL = {}
 
     # single or gather
@@ -627,7 +649,8 @@ def caseRun(request):
     # 调接口
     # t = threading.Thread(target=myCaseRun, args=(x.id, timeStamp), name='myCaseRun')  # 本系统自测
     # t = threading.Thread(target=TestProcess, args=([x.id for x in case], timeStamp), name='TestProcess')  # 本机对接client
-    t = threading.Thread(target=reqToNg, args=([x.id for x in case], timeStamp), name='toNG')     # 对接ng
+    # t = threading.Thread(target=reqToNg, args=([x.id for x in case], timeStamp), name='toNG')     # 对接ng
+    t = threading.Thread(target=pushMQ, args=([str(x.id) for x in case], timeStamp), name='toMQ')       # 对接MQ
     t.start()
 
     print('启动agent:ids %s, timeStamp %s' % ([x.id for x in case], timeStamp))
@@ -821,7 +844,7 @@ def caseCopy(request):
         origin = cases.objects.get(id=ids)
         b = copy.deepcopy(origin)
         b.id = None
-        b.userID = User.objects.get(username=request.META['USER']).id
+        b.userID = User.objects.get(username=request.user.username).id
         b.save()
 
         content = 'Copy 成功'
@@ -846,7 +869,7 @@ def caseToGroup(request):
             group = caseGroup.objects.get(groupName=groupName)
         else:
             group = caseGroup(groupName=groupName)
-            group.modifyUser = User.objects.get(username=request.META['USER']).id
+            group.modifyUser = User.objects.get(username=request.user.username).id
             group.caseID = json.dumps(ids)
             group.save()
 
@@ -910,7 +933,7 @@ def caseGroupEdit(request):
 
         group.groupName = request.POST['groupName']
         group.des = request.POST['des']
-        group.modifyUser = User.objects.get(username=request.META['USER']).id
+        group.modifyUser = User.objects.get(username=request.user.username).id
         group.save()
 
         return HttpResponseRedirect('/autoAPI/caseGroupList')

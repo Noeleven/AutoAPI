@@ -101,6 +101,8 @@
         return checkID
     }
 
+    var user = '{{request.user|safe}}'
+    console.log(user)
     // $('.pageJump').click(function(){
     //     var urlmap = {
     //             'ajax':'/autoAPI/reportSearch',

@@ -2,25 +2,17 @@ import requests
 import datetime
 import re
 
-from .moudle_request import TestResponse
-from .CloneTestTools import Tools
-from .CloneTestTools import LvLog
+from moudle_request import TestResponse
+from CloneTestTools import Tools
+from CloneTestTools import LvLog
 
 logs = LvLog("Clone_Request")
 tools = Tools()
 
 class HttpRequestStr(object):
 
-    def __init__(self, test_urls, headers):
-        # url = test_urls.api_url
-        # host = tools.tools_read_setting("host").get("host")
-        # if "m.lvmama.com" in url:
-        #     self.apiUrl = re.sub(r"m.lvmama.com", host, url)
-        #     headers["host"] = r"m.lvmama.com"
-        # if "api3g2.lvmama.com" in url:
-        #     self.apiUrl = re.sub(r"api3g2.lvmama.com", host, url)
-        #     headers["host"] = r"api3g2.lvmama.com"
-        self.apiUrl = test_urls.api_url
+    def __init__(self, test_urls, headers, env_dict):
+        self.apiUrl = self.replace_env(test_urls.api_url, env_dict)
         self.request_method = test_urls.request_method
         self.headers = headers
         if self.request_method == "POST":
@@ -31,16 +23,31 @@ class HttpRequestStr(object):
             else:
                 self.need = False
 
-    @classmethod
-    def replace_host(cls, request_str):
-
-        return request_str
+    @staticmethod
+    def replace_env(test_urls, env):
+        if "?" in test_urls:
+            url_d = test_urls[0:test_urls.index("?") + 1]
+            url_item = test_urls[test_urls.index("?") + 1:].split("&")
+            for (k, v) in env.items():
+                new_param = "%s=%s" % (k, v)
+                for item in url_item:
+                    if k in item:
+                        url_item.remove(item)
+                url_item.append(new_param)
+            test_urls = url_d + '&'.join(url_item)
+        else:
+            param_list = list()
+            for (k, v) in env.items():
+                new_param = "%s=%s" % (k, v)
+                param_list.append(new_param)
+            test_urls = test_urls + "?" + '&'.join(param_list)
+        return test_urls
 
 class CloneSendRequest:
 
     @staticmethod
-    def send(url_request, headers):
-        http_r = HttpRequestStr(url_request, headers)
+    def send(url_request, headers, env_dict):
+        http_r = HttpRequestStr(url_request, headers, env_dict)
         csr = CloneSendRequest()
         rep = None
         start_time = datetime.datetime.now()
@@ -121,3 +128,11 @@ class CheckMyResponse:
                 return match_obj
         else:
             return None
+
+
+
+
+
+
+
+
