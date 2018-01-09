@@ -91,6 +91,7 @@
     function addMod(modID, fatherID, node){
         var
             mod = document.getElementById(modID).cloneNode(true)
+            mod.id = ''
             targetTB = node.parentNode.parentNode.parentNode.nextElementSibling
 
         targetTB.appendChild(mod)
@@ -174,6 +175,17 @@
         var objParentTR = $(obj).parent().parent().parent().parent();
 
         newObj = objParentTR.clone(true)
+        newObj
+        objParentTR.after(newObj)
+        flushID()
+    }
+    // 步骤插入
+    function stepInsert(obj) {
+        var objParentTR = $(obj).parent().parent().parent().parent();
+
+        newObj = objParentTR.clone(true)
+        newObj.find(':input').not(':button').val('')
+        newObj.find('tbody tr').remove()
         objParentTR.after(newObj)
         flushID()
     }

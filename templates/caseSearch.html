@@ -24,11 +24,18 @@
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label for="note">品类</label>
+                        <label for="ci">品类</label>
                         <select multiple class="form-control input-sm" id="ci" placeholder="品类">
                             {% for x in categorys %}
                             <option value='{{x.id}}'>{{ x.cname }}</option>
                             {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="st">状态</label>
+                        <select multiple class="form-control input-sm" id="st" placeholder="状态">
+                            <option value='1' selected> 启用</option>
+                            <option value='-1'> 禁用</option>
                         </select>
                     </div>
                     <!-- <div class="form-group">
@@ -74,10 +81,11 @@
         // if ($("#version").val()){version = $("#version").val();}else{version = null};
         if ($("#owner").val()){owner = $("#owner").val();}else{owner = null};
         if ($("#note").val()){note = $("#note").val().split("+");}else{note = null};
+        if ($("#st").val()){st = $("#st").val();}else{st = null};
         // if ($("#memGroup").val()){memGroup = $("#memGroup").val();}else{memGroup = null};
 
         $.post("{% url 'caseSearch' %}",
-            {'caseId':caseId,'caseName':caseName,'ci':ci,'note':note,
+            {'caseId': caseId, 'caseName': caseName, 'ci': ci, 'note': note, 'st': st,
             // 'plantform':plantform,'version':version,
             'owner':owner,
             // 'note':note,'memGroup':memGroup

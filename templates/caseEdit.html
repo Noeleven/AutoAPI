@@ -1,29 +1,23 @@
 {% extends "apiIndex.html" %}
 {% block content %}
-
-
-
     <!-- 名称、描述 -->
     <div class="box box-danger">
         <div class="box-header with-border">
+            {% if case.status == '1' %}
+            <i class='fa fa-circle text-green'></i>
+            {% else %}
+            <i class='fa fa-circle text-red'></i>
+            {% endif %}
             <h3 class='box-title'>
-                {% if case.status == '1' %}
-                <i class='fa fa-circle text-green'></i>
-                {% else %}
-                <i class='fa fa-circle text-red'></i>
-                {% endif %}
-            {{case.caseName}}</h3>
+            用例名称: {{case.caseName}}</h3>
             <hr>
             <form class="form" method="post" enctype="multipart/form-data" action='/autoAPI/upload'>
                 {% csrf_token %}
                 {{form}}
                 <input type="text" name="caseID" value="{{case.id}}" class='sr-only'><br>
-                <button type="submit" name="button" class='btn btn-default btn-sm'>upload</button>
+                {% if mess %}<p class='text-danger'>{{ mess }}</p>{% endif %}
+                <button type="submit" name="button" class='btn btn-warning btn-sm'>上传</button>
             </form>
-
-            <!-- <label for="exampleInputFile">从HAR导入</label>
-            <input type="file" id="exampleInputFile">
-            <button type="button" class="btn btn-default btn-sm"><i class='fa fa-import'></i> 导入</button> -->
 
             <div class="alert alert-danger alert-dismissible" style='display:none'>
                 <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
@@ -65,18 +59,19 @@
                     </div>
                     <!-- des -->
                     <div class="form-group">
-                        <label>备注</label>
+                        <label>描述</label>
                         <textarea class="form-control" name="caseDes" placeholder="描述">{{case.des}}</textarea>
                     </div>
                     <!-- envChoice -->
                     <div class="form-group">
-                        <label>公共参数选择</label>
+                        <label>公共参数 <small class='text-info'>(用于批量设置步骤中的对应参数, 如lvsessionId, 不需要则不选)</small></label>
                         <div class="input-group">
                             <div class="input-group-btn">
                                 <button id='lookEnvBtn' type="button" class='btn btn-default btn-flat' data-toggle="modal" data-target="#addEnv"><i class='fa fa-eye'></i> </button>
                             </div>
                             <div id='getEnvSelect'>
                                 <select class="form-control" name="choiceEnv">
+                                    <option></option>
                                     {% for x in envs %}
                                     <option value="{{x.id}}" {% if x.id == case.enviID.id %}selected{% endif %}>{{x.envName}}</option>
                                     {% endfor %}
@@ -87,7 +82,7 @@
                                 <button id='refreshBtn' type="button" class='btn btn-default btn-flat'><i class='fa fa-refresh'></i> </button>
                             </div>
                         </div>
-                        <p class="help-text text-danger"> 新建/编辑完公共参数, 需要点击刷新才能查看</p>
+                        <small class="help-text text-danger"> 新建/编辑完公共参数, 需要点击刷新才能查看</small>
                     </div>
 
                     <button type="submit" class="btn btn-success btn-sm"><i class='fa fa-save'></i> 保存</button>
@@ -130,7 +125,7 @@
     </div>
 
     <div class="box-header with-border">
-        <h3 class='box-title'><i class='fa fa-sort-numeric-asc'></i> 步骤 STEP</h3>
+        <h3 class='box-title'><i class='fa fa-sort-numeric-asc'></i> 步骤 STEP</h3>(下列步骤可点击展开进行配置)
     </div>
     <!-- 步骤 tab -->
     <div id='stepMaster' class="box-group">
@@ -147,8 +142,8 @@
                 <div class="col-sm-4 pull-right">
                     <!-- 右侧按钮组 -->
                     <div class="box-tools pull-right">
+                        <button onclick='stepInsert(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title="插入"><i class="fa fa-plus"></i> </button>
                         <button onclick='stepCopy(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title="复制"><i class="fa fa-copy"></i> </button>
-                        <!-- <button onclick='stepInsert(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title="插入"><i class="fa fa-plus"></i> </button> -->
                         <button onclick='stepUp(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title=""><i class="fa fa-arrow-up"></i> </button>
                         <button onclick='stepDown(this)' type="button" class="btn btn-box-tool" data-toggle="tooltip" data-original-title=""><i class="fa fa-arrow-down"></i> </button>
                         <button onclick='stepDel(this)' type="button" class="btn btn-box-tool"><i class="fa fa-remove"></i> </button>
@@ -156,7 +151,7 @@
                 </div>
             </div>
             <!-- 每个步骤 -->
-            <div id="collapse{{x.index}}" class="panel-collapse collapse" aria-expanded="false" style="height: 0px;">
+            <div id="collapse{{x.index}}" class="panel-collapse collapse {% if story.caseStep|length == 1 %}in" aria-expanded="true"{%else%}" aria-expanded="false"{%endif%}>
                 <div class="box-body">
                     <div class="nav-tabs-custom">
                         <!-- tabs -->
@@ -183,7 +178,7 @@
                                             </select>
                                         </div>
                                         <div class="form-group">
-                                            <textarea type="text" class="form-control" placeholder="URL" rows=5 name='stepURL' >{{x.url}}</textarea>
+                                            <textarea type="text" class="form-control" placeholder="URL" rows=5 name='stepURL' required>{{x.url}}</textarea>
                                         </div>
                                         <button onclick='singleTest(this)' type="button" class="btn btn-default"><i class='fa fa-play'></i> 测试</button>
                                         <!-- <button onclick='toParams(this)' type="button" class="btn btn-info" disabled>参数化</button> -->

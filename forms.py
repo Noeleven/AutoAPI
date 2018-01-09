@@ -20,7 +20,7 @@ class CaseAddForm(forms.Form):
 		error_messages={'required': '用例名不能为空.'})
 
 class CaseUpForm(forms.Form):
-	file = forms.FileField(label='通过Charles HAR 文件导入')
+	file = forms.FileField(label='可以选择通过Charles 导出HAR文件，导入本系统、上传生成测试步骤')
 
 class ForgetForm(forms.Form):
 	email = forms.EmailField(

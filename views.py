@@ -67,9 +67,7 @@ def parseHAR(f):
     return caseStep, headers
 
 def pushMQ(cases, timeStamp):
-    conf = os.path.abspath('.') + '/AutoAPI/' + "config.ini"
-    cf = configparser.ConfigParser()
-    cf.read(conf, "utf-8")
+    cf = getConf()
     host = cf.get("mq", "host")
 
     connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
@@ -85,6 +83,12 @@ def pushMQ(cases, timeStamp):
                             ))
     # print(" [x] Sent %r" % (message,))
     connection.close()
+
+def getConf():
+    conf = os.path.abspath('.') + '/AutoAPI/' + "config.ini"
+    cf = configparser.ConfigParser()
+    cf.read(conf, 'utf-8')
+    return cf
 
 '''login'''
 # 登录
@@ -209,6 +213,10 @@ def caseEdit(request, a):
     pageTitle = '用例编辑'
     pageNote = ''
     categorys = category.objects.all()
+    try:
+        mess = request.GET['message']
+    except:
+        pass
 
     form = CaseUpForm()
 
@@ -219,7 +227,13 @@ def caseEdit(request, a):
         case.des = myData['caseDes']
         case.status = myData['caseStatus']
         case.ci = category.objects.get(id=myData['category'])
-        case.enviID = Env.objects.get(id=myData['choiceEnv'])
+        if myData['choiceEnv']:
+            if Env.objects.filter(id=myData['choiceEnv']):
+                case.enviID = Env.objects.get(id=myData['choiceEnv'])
+            else:
+                case.enviID = None
+        else:
+            case.enviID = None
 
         # header
         headerKey = myData.getlist('headerKey')
@@ -269,13 +283,20 @@ def caseEdit(request, a):
             }
             story['caseStep'].append(d)
         case.story = json.dumps(story, ensure_ascii=True)
-        case.userID = User.objects.get(username=request.user.username).id
+        if not case.userID:
+            case.userID = User.objects.get(username=request.user.username).id
         case.save()
     else:
         if case.header:
             headers = json.loads(case.header)
+        else:
+            cf = getConf()
+            k = cf.get("headers", "k")
+            v = cf.get("headers", "v")
+            headers = {k:v}
         if case.story:
             story = json.loads(case.story)
+
     return render(request,'caseEdit.html',locals())
 
 # 上传文件
@@ -284,7 +305,7 @@ def upload(request):
     try:
         form = CaseUpForm(request.POST, request.FILES)
     except:
-        print('upload error')
+        mess = '获取文件失败, 重新上传'
     else:
         if form.is_valid():
             try:
@@ -292,20 +313,25 @@ def upload(request):
                 caseStep = result[0]
                 headers = result[1]
             except:
-                mess = '解析文件出错'
+                mess = '解析文件出错, 请确保是charles导出的HAR文件格式'
             else:
                 case = cases.objects.get(id=request.POST['caseID'])
-                story = {'caseID': request.POST['caseID'], 'caseStep': caseStep}
-                case.story = json.dumps(story)
-                case.header = json.dumps(headers)
-                case.save()
-                mess = '解析成功'
+                try:
+                    oldStory = json.loads(case.story)['caseStep']
+                    caseStep += oldStory
+                except:
+                    pass
+                finally:
+                    story = {'caseID': request.POST['caseID'], 'caseStep': caseStep}
+                    case.story = json.dumps(story)
+                    case.header = json.dumps(headers)
+                    case.save()
+                    mess = '解析成功'
+                    return HttpResponseRedirect('/autoAPI/caseEdit/%s' % request.POST['caseID'])
         else:
-            mess = '上传失败'
+            mess = '获取文件失败, 重新上传'
 
-        print(mess)
-
-        return HttpResponseRedirect('/autoAPI/caseEdit/%s' % request.POST['caseID'])
+        return HttpResponseRedirect('/autoAPI/caseEdit/%s?message=%s' % (request.POST['caseID'], mess))
 
 # 添加环境
 @login_required
@@ -386,7 +412,7 @@ def caseSearch(request):
                 myrequest[k1] = v
 
         # 用例列表
-        origin = cases.objects.filter(status='1')
+        origin = cases.objects.all()
         # 对于小组，找出组员，把名字添加到owner列表中即可
         # try:
         #     if myrequest['memGroup']:
@@ -412,6 +438,8 @@ def caseSearch(request):
                         if_list[m] += origin.filter(caseName__contains=x)
                     elif m == 'ci':
                         if_list[m] += origin.filter(ci__id=x)
+                    elif m == 'st':
+                        if_list[m] += origin.filter(status=x)
                     # elif m == 'plantform':
                     #     if_list[m] += origin.filter(plantform__contains=x)
                     # elif m == 'version':
@@ -419,7 +447,7 @@ def caseSearch(request):
                     elif m == 'note':
                         if_list[m] += origin.filter(des__contains=x)
                     elif m == 'owner':
-                        if_list[m] += origin.filter(userID__contains=x)
+                        if_list[m] += origin.filter(userID=x)
                     else:
                         print('search:未知参数 %s' % m)
                         break
@@ -455,7 +483,6 @@ def caseSearch(request):
 def caseUniTest(request):
     # 解析参数
     timeStamp = str(int(time.time())) + str(random.randint(000000,999999))
-    # header = {'signal':'ab4494b2-f532-4f99-b57e-7ca121a137ca'}
     header = {}
     # print(request.POST)
     if request.POST['header']:
@@ -853,7 +880,6 @@ def caseCopy(request):
 
     return render(request, 'ModalCopy.html', locals())
 
-
 ''' 用例集 '''
 # 添加用例集
 @login_required
@@ -957,41 +983,45 @@ def caseGroupEdit(request):
 
         return render(request, 'caseGroupEdit.html', locals())
 
-
 '''小组管理'''
-# 小组列表
-# def memGroupList(request):
-#     memGroup = userGroup.objects.all()
-#     nav_list = navList()
-#     for x in memGroup:
-#         if x.groupUser:
-#             x.count = len(json.loads(x.groupUser))
-#         else:
-#             x.count = 0
-#     return render(request,'memGroupList.html',locals())
-# # 小组编辑
-# def memGroupEdit(request):
-#     allMem = caseUser.objects.filter(userStatus=1)
-#     nav_list = navList()
-#     try:
-#         groupID = request.GET['groupId']
-#     except KeyError as e:
-#         pass
-#     else:
-#         if groupID:
-#             groupID = request.GET['groupId']
-#             group = userGroup.objects.get(id=groupID)
-#             if group.groupUser:
-#                 gourpIDS = json.loads(group.groupUser)
-#                 print(gourpIDS)
-#                 for x in allMem:
-#                     if str(x.id) in gourpIDS:
-#                         x.status = 'checked'
-#                     else:
-#                         x.status = 'unchecked'
-#
-#     return render(request,'memGroupEdit.html',locals())
-#
+def memGroupList(request):
+    # memGroup = userGroup.objects.all()
+    # nav_list = navList()
+    # for x in memGroup:
+    #     if x.groupUser:
+    #         x.count = len(json.loads(x.groupUser))
+    #     else:
+    #         x.count = 0
+    return render(request,'memGroupList.html',locals())
+
+# 小组编辑
+def memGroupEdit(request):
+    # allMem = caseUser.objects.filter(userStatus=1)
+    # nav_list = navList()
+    # try:
+    #     groupID = request.GET['groupId']
+    # except KeyError as e:
+    #     pass
+    # else:
+    #     if groupID:
+    #         groupID = request.GET['groupId']
+    #         group = userGroup.objects.get(id=groupID)
+    #         if group.groupUser:
+    #             gourpIDS = json.loads(group.groupUser)
+    #             print(gourpIDS)
+    #             for x in allMem:
+    #                 if str(x.id) in gourpIDS:
+    #                     x.status = 'checked'
+    #                 else:
+    #                     x.status = 'unchecked'
+    #
+    # if request.method == 'POST':
+    #     save()
+    # else:
+
+
+    return render(request,'memGroupEdit.html',locals())
+
 # def memGroupSave(request):
 #     try:
 #         groupID = request.POST.get('groupID')
@@ -1009,3 +1039,6 @@ def caseGroupEdit(request):
 #             r.groupUser = json.dumps(groupUser)
 #         r.save()
 #     return HttpResponseRedirect('/auto/memGroupList')
+
+def bigData(request):
+    return render(request, 'bigData.html', locals())
