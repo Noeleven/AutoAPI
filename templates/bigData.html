@@ -1,0 +1,37 @@
+{% extends "apiIndex.html" %}
+{% block content %}
+
+<div class="box box-danger">
+    <div class="box-header with-border">
+      <h3 class='box-title'><i class='fa fa-bar-chart'></i> 数据视图</h3>
+    </div>
+    <div class="box-body">
+        <form class="form form-inline">
+            <div class="form-group">
+                <label>组织</label>
+                <select class="form-control input-sm" name="orga">
+                    <option value="all">All</option>
+                    {% for x in orga%}
+                    <option value="{{x.id}}">{{ x.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="button" class='btn btn-primary btn-sm' onclick="pullData()">查询</button>
+        </form>
+        <hr>
+        <div id="myTable">
+        </div>
+    </div>
+</div>
+
+<script>
+    function pullData(){
+        var orgID = $('select').val()
+
+        $.get('/autoAPI/getBigData', {'orgID':orgID}, function(ret){
+            $('#myTable').html(ret)
+        })
+    }
+    pullData()
+</script>
+{% endblock content %}

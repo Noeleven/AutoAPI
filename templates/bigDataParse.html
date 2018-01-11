@@ -1,0 +1,94 @@
+{% load staticfiles %}
+<script src="{% static 'js/echarts-all-3.js' %}"></script>
+
+<div class="row">
+    <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="info-box">
+        <span class="info-box-icon bg-aqua"><i class="fa fa-gears"></i></span>
+
+        <div class="info-box-content">
+          <span class="info-box-text">用例数量</span>
+          <span class="info-box-number">{{ origin |length }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="info-box">
+        <span class="info-box-icon bg-red"><i class="fa fa-heartbeat"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">平均评分</span>
+          <span class="info-box-number">{{avgScore}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="clearfix visible-sm-block"></div>
+    <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="info-box">
+        <span class="info-box-icon bg-green"><i class="fa fa-balance-scale"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">本周构建次数</span>
+          <span class="info-box-number">{{buildTimes}}</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 col-xs-12">
+      <div class="info-box">
+        <span class="info-box-icon bg-yellow"><i class="fa fa-battery-half"></i></span>
+        <div class="info-box-content">
+          <span class="info-box-text">通过占比</span>
+          <span class="info-box-number">{{passRate}}<small>%</small></span>
+        </div>
+      </div>
+    </div>
+</div>
+<div class="col-xs-6 col-sm-6 col-md-6">
+    <div id='rada' style='height:600px'></div>
+</div>
+
+
+<script>
+    var chart1 = echarts.init(document.getElementById('rada'));
+
+    option1 = {
+        title : {
+            text: '各品类覆盖情况',
+        },
+        legend: {
+            data:{{ covLi | safe}},
+            bottom:'bottom'
+        },
+        series : [
+            {
+                name:'',
+                type:'pie',
+                radius: ['20%', '35%'],
+                label: {
+                    normal: {
+                        formatter: ' {a|{a}} {b|{b}:} {c} {per|{d}%} ',
+                        borderColor: '#aaa',
+                        fontSize: 14,
+                        show: true,
+                        length: 100,
+                        rich: {
+                            per: {
+                                color: '#eee',
+                                backgroundColor: '#334455',
+                                padding: [1, 2],
+                                borderRadius: 2
+                            }
+                        }
+                    }
+                },
+                roseType:true,
+                center : ['50%', '50%'],
+                data:[
+                    {% for y in coverage %}
+                    {value:{{y.value}}, name:'{{y.name}}'},
+                    {% endfor %}
+                ]
+            },
+        ]
+    };
+
+    chart1.setOption(option1, true);
+</script>

@@ -29,6 +29,9 @@
             <th data-field="状态" data-sortable="true">
                 状态
             </th>
+            <th data-field="评分" data-sortable="true">
+                评分
+            </th>
             <th data-field="用例集" data-sortable="true">
                 用例集
             </th>
@@ -59,6 +62,7 @@
                 <i class='fa fa-circle text-yellow'></i>
             {% else %}
                 <i class='fa fa-circle text-red'></i>{% endif %}</td>
+        <td><span class="pull-right badge {%if x.score >= 60 %}bg-green{%else%}bg-red{%endif%}">{{ x.score }}</span></td>
         <td>{% if x.groupid %}<span class="label label-primary">{{x.groupid}}</span>{% else %}<i class='fa fa-circle text-red'></i>{% endif %} </td>
         <td>{{ x.modify_time|date:"Y-m-d H:i:s" }}</td>
         <td>

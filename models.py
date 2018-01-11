@@ -48,6 +48,7 @@ class cases(models.Model):
     userID = models.CharField('所属人', max_length=100, blank=True)
     enviID = models.ForeignKey(Env, blank=True, null=True)
     harFile = models.FileField(upload_to = './upload/', null=True, blank=True)
+    score = models.IntegerField('评分', blank=True, null=True)
     create_time = models.DateTimeField(auto_now_add=True, blank=True)
     modify_time = models.DateTimeField(auto_now=True, blank=True)
 
@@ -88,6 +89,12 @@ class myConfig(models.Model):
     caseInfo = models.TextField('结果', blank=True)
     timeStamp = models.CharField('唯一记录标志', max_length=20, blank=True)
     create_time = models.DateTimeField(auto_now_add=True, blank=True)
+
+class organize(models.Model):
+    name = models.CharField(blank=True, max_length=200)
+    members = models.TextField(blank=True)
+    create_time = models.DateTimeField(auto_now_add=True, blank=True)
+    modify_time = models.DateTimeField(auto_now=True, blank=True)
 
 class casesAdmin(admin.ModelAdmin):
     list_display = ('caseName', 'des', 'status', 'create_time', 'modify_time')

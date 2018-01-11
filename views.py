@@ -191,7 +191,7 @@ def caseAdd(request):
             p = cases(caseName=caseName)
             story = {"caseID":p.id, "caseStep":[{'index':1}]}
             p.story = json.dumps(story, ensure_ascii=True)
-
+            p.score = 0
             p.userID = User.objects.get(username=request.user.username).id
             p.save()
             print(reverse('caseEdit', args=(p.id,)))
@@ -285,6 +285,18 @@ def caseEdit(request, a):
         case.story = json.dumps(story, ensure_ascii=True)
         if not case.userID:
             case.userID = User.objects.get(username=request.user.username).id
+
+        # score
+        stepLen = len(story['caseStep'])
+        stepScore = stepLen * 4
+        if stepScore > 20:
+            stepScore = 20
+        checkScore = 0
+        everyS = 80 // stepLen
+        for x in story['caseStep']:
+            if len(x['check']) >= 1:
+                checkScore += everyS
+        case.score = stepScore + checkScore
         case.save()
     else:
         if case.header:
@@ -400,7 +412,7 @@ def caseSearch(request):
     # 查询选项列表
     user_list = User.objects.filter(is_active='1')
     categorys = category.objects.all()
-
+    memGroup = organize.objects.all()
     # 提交查询
     if request.method == 'POST':
         myRequest = dict(request.POST)
@@ -414,17 +426,17 @@ def caseSearch(request):
         # 用例列表
         origin = cases.objects.all()
         # 对于小组，找出组员，把名字添加到owner列表中即可
-        # try:
-        #     if myrequest['memGroup']:
-        #         for x in myrequest['memGroup']:
-        #             groupUser = [caseUser.objects.get(id=z).userName for z in  json.loads(userGroup.objects.get(id=x).groupUser)]
-        #             if 'owner' in myrequest:
-        #                 myrequest['owner'] += groupUser
-        #             else:
-        #                 myrequest['owner'] = groupUser
-        #         del myrequest['memGroup']
-        # except Exception as e:
-        #     logger.info('search:%s' % e)
+        try:
+            if myrequest['memGroup']:
+                for x in myrequest['memGroup']:
+                    groupUser = json.loads(organize.objects.get(id=x).members)
+                    if 'owner' in myrequest:
+                        myrequest['owner'] += groupUser
+                    else:
+                        myrequest['owner'] = groupUser
+                del myrequest['memGroup']
+        except Exception as e:
+            print('search:%s' % e)
         # 每个key值循环取并集，最后取交集
         if myrequest:
             if_list = {}
@@ -447,7 +459,7 @@ def caseSearch(request):
                     elif m == 'note':
                         if_list[m] += origin.filter(des__contains=x)
                     elif m == 'owner':
-                        if_list[m] += origin.filter(userID=x)
+                        if_list[m] += origin.filter(userID=int(x))
                     else:
                         print('search:未知参数 %s' % m)
                         break
@@ -985,60 +997,108 @@ def caseGroupEdit(request):
 
 '''小组管理'''
 def memGroupList(request):
-    # memGroup = userGroup.objects.all()
-    # nav_list = navList()
-    # for x in memGroup:
-    #     if x.groupUser:
-    #         x.count = len(json.loads(x.groupUser))
-    #     else:
-    #         x.count = 0
+    memGroup = organize.objects.all()
+    for x in memGroup:
+        if x.members:
+            x.count = len(json.loads(x.members))
+        else:
+            x.count = 0
     return render(request,'memGroupList.html',locals())
 
 # 小组编辑
 def memGroupEdit(request):
-    # allMem = caseUser.objects.filter(userStatus=1)
-    # nav_list = navList()
-    # try:
-    #     groupID = request.GET['groupId']
-    # except KeyError as e:
-    #     pass
-    # else:
-    #     if groupID:
-    #         groupID = request.GET['groupId']
-    #         group = userGroup.objects.get(id=groupID)
-    #         if group.groupUser:
-    #             gourpIDS = json.loads(group.groupUser)
-    #             print(gourpIDS)
-    #             for x in allMem:
-    #                 if str(x.id) in gourpIDS:
-    #                     x.status = 'checked'
-    #                 else:
-    #                     x.status = 'unchecked'
-    #
-    # if request.method == 'POST':
-    #     save()
-    # else:
+    allMem = User.objects.all()
 
+    if request.method == 'POST':
+        try:
+            groupID = request.POST.get('groupID')
+            if groupID:
+                r = organize.objects.get(id=groupID)
+            else:
+                r = organize(name=request.POST.get('groupName'))
+        except:
+            r = organize(name=request.POST.get('groupName'))
+        finally:
+            r.name = request.POST.get('groupName')
+            if request.POST.get('groupListBox'):
+                members = request.POST.getlist('groupListBox')
+                r.members = json.dumps(members)
+            r.save()
+            return HttpResponseRedirect('/autoAPI/memGroupList')
+    else:
+        try:
+            groupID = request.GET['groupID']
+        except:
+            pass
+        else:
+            if groupID:
+                groupID = request.GET['groupID']
+                group = organize.objects.get(id=groupID)
+                if group.members:
+                    gourpIDS = json.loads(group.members)
+                    for x in allMem:
+                        if str(x.id) in gourpIDS:
+                            x.status = 'checked'
+                        else:
+                            x.status = 'unchecked'
 
-    return render(request,'memGroupEdit.html',locals())
+        return render(request,'memGroupEdit.html',locals())
 
-# def memGroupSave(request):
-#     try:
-#         groupID = request.POST.get('groupID')
-#         if groupID:
-#             r = userGroup.objects.get(id=groupID)
-#         else:
-#             r = userGroup(groupName=request.POST.get('groupName'))
-#     except:
-#         r = userGroup(groupName=request.POST.get('groupName'))
-#     finally:
-#         r.groupName = request.POST.get('groupName')
-#         r.des = request.POST.get('des')
-#         if request.POST.get('groupListBox'):
-#             groupUser = request.POST.getlist('groupListBox')
-#             r.groupUser = json.dumps(groupUser)
-#         r.save()
-#     return HttpResponseRedirect('/auto/memGroupList')
+def orgToCount(orgID='all'):
+    if orgID == 'all':
+        origin = cases.objects.filter(status='1')
+    else:
+        org = organize.objects.get(id=orgID)
+        mem = json.loads(org.members)
+        origin = cases.objects.filter(id='-1')
+        for x in mem:
+            origin = origin | cases.objects.filter(status='1').filter(userID=x)
+
+    # 平均评分
+    avgScore = sum([x.score for x in origin if x.score]) // len(origin)
+    # 各品类覆盖率
+    coverage = []
+    covLi = []
+    for x in category.objects.all():
+        tmp = {
+            'name':x.cname,'value':origin.filter(ci=x).count(),
+        }
+        coverage.append(tmp)
+        covLi.append(x.cname)
+
+    # 本周构建次数，通过占比
+    now = datetime.datetime.now()
+    weekAgo = now - datetime.timedelta(days=7)
+    caseLi = [x.id for x in origin]
+    records = [x for x in results.objects.filter(create_time__range=(weekAgo, now)) if x.caseID in caseLi]
+    buildTimes = len(records)
+    try:
+        passRate = records.filter(status='success').count() / buildTimes
+    except:
+        passRate = 0
+
+    result = {
+        'origin':origin,
+        'avgScore':avgScore,
+        'buildTimes':buildTimes,
+        'passRate':passRate,
+        'coverage':coverage,
+        'covLi':covLi,
+    }
+    return result
 
 def bigData(request):
+    orga = organize.objects.all()
     return render(request, 'bigData.html', locals())
+
+def getBigData(request):
+    orgID = request.GET['orgID']
+    print(orgID)
+    result = orgToCount(orgID)
+    origin = result['origin']
+    avgScore = result['avgScore']
+    buildTimes = result['buildTimes']
+    passRate = result['passRate']
+    coverage = result['coverage']
+    covLi = result['covLi']
+    return render(request, 'bigDataParse.html', locals())

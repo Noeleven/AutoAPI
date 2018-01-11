@@ -31,4 +31,6 @@ urlpatterns = [
 	url(r'^memGroupList$', memGroupList, name='memGroupList'),	#	小组列表
 	url(r'^memGroupEdit$', memGroupEdit, name='memGroupEdit'),	#	小组编辑
 	url(r'^bigData$', bigData, name='bigData'),	#	数据报表
+	url(r'^getBigData$', getBigData, name='getBigData'),	#	数据报表
+	
 ]

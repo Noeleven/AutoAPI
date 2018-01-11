@@ -125,7 +125,7 @@
     </div>
 
     <div class="box-header with-border">
-        <h3 class='box-title'><i class='fa fa-sort-numeric-asc'></i> 步骤 STEP</h3>(下列步骤可点击展开进行配置)
+        <h3 class='box-title'><i class='fa fa-sort-numeric-asc'></i> 步骤 用例评分: <span class="pull-right badge {%if case.score >= 60 %}bg-green{%else%}bg-red{%endif%}"> {{ case.score }}</span></h3>(下列步骤可点击展开进行配置, 建议每个步骤都增加校验以提高用例得分)
     </div>
     <!-- 步骤 tab -->
     <div id='stepMaster' class="box-group">
