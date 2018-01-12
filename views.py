@@ -1070,10 +1070,10 @@ def orgToCount(orgID='all'):
     now = datetime.datetime.now()
     weekAgo = now - datetime.timedelta(days=7)
     caseLi = [x.id for x in origin]
-    records = [x for x in results.objects.filter(create_time__range=(weekAgo, now)) if x.caseID in caseLi]
+    records = [x for x in results.objects.filter(create_time__range=(weekAgo, now)) if int(x.caseID) in caseLi]
     buildTimes = len(records)
     try:
-        passRate = records.filter(status='success').count() / buildTimes
+        passRate = len([x for x in records if x.status == 'success']) * 100 // buildTimes
     except:
         passRate = 0
 
